@@ -26,7 +26,7 @@ class UserSeeder extends Seeder
                 'name' => 'Mod User',
                 'username' => 'moderUser',
                 'email' => 'mod@gmail.com',
-                'role' => 'moderador',
+                'role' => 'mod',
                 'status' => 'active',
                 'password' => bcrypt('12345678'),
             ],
