@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="adminHMD professional admin dashboard template">
-  <title>Dashboard | adminHMD</title>
+  <title>Dashboard ADMIN</title>
 
   <link rel="stylesheet" href="{{ asset('backend/assets/css/bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ asset('backend/assets/vendors/bootstrap-icons/bootstrap-icons.css') }}">
@@ -18,9 +18,9 @@
     <aside class="admin-sidebar" id="adminSidebar" aria-label="Main navigation">
       <div class="sidebar-header">
         <a class="brand-mark" href="index.html" aria-label="adminHMD dashboard">
-          <span class="brand-icon"><i class="bi bi-grid-1x2-fill" aria-hidden="true"></i></span>
+          <img class="avatar-img avatar-smn" src="{{ asset('backend/assets/images/avatar/lt_logo-removebg-preview.png') }}" alt="HELPER">
           <span class="brand-copy">
-            <span class="brand-title">adminHMD</span>
+            <span class="brand-title">HELPER</span>
             <span class="brand-subtitle">Admin Template</span>
           </span>
         </a>
@@ -78,8 +78,8 @@
       </nav>
 
       <div class="sidebar-user">
-        <img class="avatar-img avatar-md sidebar-user-avatar" src="{{ asset('backend/assets/images/avatar/avatar.jpg') }}" alt="Admin Hasan">
-        <strong>Admin Hasanton</strong>
+        <img class="avatar-img avatar-md sidebar-user-avatar" src="{{ asset('../images/avatar/avatar.jpg') }}" alt="Admin">
+        <strong>Admin</strong>
         <small>Active Workspace</small>
       </div>
 

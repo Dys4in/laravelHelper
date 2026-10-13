@@ -372,7 +372,6 @@ a {
 .avatar-img {
   display: block;
   flex: 0 0 auto;
-  object-fit: cover;
   object-position: center;
 }
 
@@ -380,6 +379,11 @@ a {
   width: 34px;
   height: 34px;
   border-radius: 10px;
+}
+.avatar-smn {
+  width: 53px;
+  height: 45px;
+  border-radius: 5px;
 }
 
 .avatar-md {

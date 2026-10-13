@@ -1,0 +1,485 @@
+
+/* =========================================
+   HELPER LOGIN - AJUSTES DE TAMAÑO Y ESPACIO
+   ========================================= */
+
+/* Fondo y centrado de la vista */
+.login-page {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    box-sizing: border-box;
+}
+
+/* Tarjeta principal más grande */
+.login-card {
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    max-width: 540px;
+    padding: 48px 56px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    box-shadow:
+        0 18px 50px rgba(20, 25, 45, 0.09),
+        0 3px 10px rgba(20, 25, 45, 0.04);
+}
+
+/* Elimina la bola o resplandor decorativo */
+.login-card-glow {
+    display: none !important;
+}
+
+/* Encabezado */
+.login-header {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin: 0 0 36px;
+}
+
+/* Contenedor del logo: sin caja fija innecesaria */
+.login-logo-wrapper {
+    width: auto;
+    height: auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    padding: 0;
+    overflow: visible;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+
+/* Logo: utiliza sus proporciones reales */
+.login-logo {
+    display: block;
+    width: 260px;
+    max-width: 100%;
+    height: auto;
+    max-height: 200px;
+    margin: 0;
+    padding: 0;
+    object-fit: contain;
+    object-position: center;
+    flex-shrink: 0;
+}
+
+/* Título principal */
+.login-title {
+    margin: 8px 0 0;
+    font-size: 30px;
+    line-height: 1.2;
+    font-weight: 900;
+    letter-spacing: -0.8px;
+    color: #07080c;
+    
+}
+
+/* Texto descriptivo */
+.login-subtitle {
+    margin: 10px 0 0;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #6b7280;
+}
+
+/* Formulario */
+.login-form {
+    width: 100%;
+}
+
+/* Separación entre campos */
+.login-field {
+    width: 100%;
+    margin-bottom: 26px;
+}
+
+/* Etiquetas */
+.login-label {
+    display: block;
+    margin-bottom: 9px;
+    font-size: 15px;
+    line-height: 1.4;
+    font-weight: 600;
+    color: #374151;
+}
+
+/* Contenedor de contraseña y campo */
+.login-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+
+
+/* Campos de entrada */
+.login-input {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: 58px;
+    padding: 0 52px 0 18px;
+    box-sizing: border-box;
+    border: 1px solid #dfe3eb;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #1f2937;
+    font-family: inherit;
+    font-size: 15px;
+    line-height: normal;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.login-input::placeholder {
+    color: #a0a8b8;
+    opacity: 1;
+}
+
+.login-input:hover {
+    border-color: #b7a5ed;
+}
+
+.login-input:focus {
+    outline: none;
+    border-color: #7046d3;
+    box-shadow: 0 0 0 4px rgba(112, 70, 211, 0.12);
+}
+
+/* Icono para mostrar u ocultar contraseña */
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.password-toggle img {
+    display: block;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+}
+
+.password-toggle:hover img {
+    transform: scale(1.1);
+}
+
+/* Recordarme y recuperar contraseña */
+.login-options {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 4px 0 30px;
+    font-size: 14px;
+}
+
+.remember-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    cursor: pointer;
+    color: #596273;
+}
+
+
+
+
+
+
+
+
+
+/* Eliminar destellos azules al interactuar */
+.remember-checkbox,
+.remember-checkbox:hover,
+.remember-checkbox:active,
+.remember-checkbox:focus,
+.remember-checkbox:focus-visible,
+.remember-checkbox:checked,
+.remember-checkbox:checked:hover,
+.remember-checkbox:checked:active {
+    -webkit-tap-highlight-color: transparent !important;
+    accent-color: #7046d3 !important;
+    outline-color: #7046d3 !important;
+}
+
+/* Evitar animaciones heredadas que muestran el azul */
+.remember-checkbox {
+    animation: none !important;
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease !important;
+}
+
+/* Controlar el color del efecto hover */
+.remember-checkbox:hover {
+    background-color: #f0eaff !important;
+    border-color: #7046d3 !important;
+    box-shadow: 0 0 0 3px rgba(112, 70, 211, 0.15) !important;
+}
+
+/* Mantener el morado al marcar */
+.remember-checkbox:checked,
+.remember-checkbox:checked:hover,
+.remember-checkbox:checked:active {
+    background-color: #7046d3 !important;
+    border-color: #7046d3 !important;
+}
+
+
+/* Checkbox Recordarme */
+.remember-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    border: 2px solid #7046d3;
+    border-radius: 4px;
+    background-color: #ffffff;
+    cursor: pointer;
+    display: inline-grid;
+    place-content: center;
+    transition: all 0.2s ease;
+}
+
+/* Hover morado claro */
+.remember-checkbox:hover {
+    border-color: #7046d3 !important;
+    background-color: #f0eaff !important;
+    box-shadow: 0 0 0 3px rgba(112, 70, 211, 0.15);
+}
+
+/* Checkbox marcado */
+.remember-checkbox:checked {
+    background-color: #7046d3 !important;
+    border-color: #7046d3 !important;
+}
+
+/* Marca blanca */
+.remember-checkbox:checked::before {
+    content: "";
+    width: 5px;
+    height: 9px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-top: -2px;
+}
+
+/* Hover cuando está marcado */
+.remember-checkbox:checked:hover {
+    background-color: #5b35b5 !important;
+    border-color: #5b35b5 !important;
+}
+
+/* Foco con teclado, sin azul */
+.remember-checkbox:focus,
+.remember-checkbox:focus-visible {
+    outline: 2px solid rgba(112, 70, 211, 0.45) !important;
+    outline-offset: 3px;
+    box-shadow: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+.forgot-link {
+    color: #6040bd;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.forgot-link:hover {
+    color: #48269e;
+    text-decoration: underline;
+}
+
+
+
+/* Botón principal */
+.login-button {
+    width: 100%;
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    padding: 14px 22px;
+    border: 0;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #7150c5, #5c3cb0);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 5px 14px rgba(93, 60, 176, 0.2);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        filter 0.2s ease;
+}
+
+.login-button:hover {
+    filter: brightness(1.06);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(93, 60, 176, 0.27);
+}
+
+.login-button:active {
+    transform: translateY(0);
+}
+
+.login-button:disabled {
+    opacity: 0.8;
+    cursor: wait;
+    transform: none;
+}
+
+/* GIF de carga, si lo utilizas */
+.login-loading-gif {
+    width: 25px;
+    height: 25px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+/* Enlace para registrarse */
+.register-link {
+    margin-top: 32px;
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #737b8c;
+}
+
+.register-link a {
+    color: #6040bd;
+    font-weight: 700;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.register-link a:hover {
+    color: #48269e;
+    text-decoration: underline;
+}
+
+/* Errores de validación */
+.login-error {
+    display: block;
+    margin-top: 7px;
+    font-size: 13px;
+    color: #dc2626;
+}
+
+/* Animación de entrada */
+@keyframes login-appear {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-card {
+    animation: login-appear 0.45s ease-out both;
+}
+
+/* Diseño adaptable a móviles */
+@media (max-width: 600px) {
+    .login-page {
+        padding: 22px 16px;
+        align-items: center;
+    }
+
+    .login-card {
+        max-width: 100%;
+        padding: 34px 24px;
+        border-radius: 13px;
+    }
+
+    .login-logo {
+        width: 160px;
+        max-height: 120px;
+    }
+
+    .login-title {
+        font-size: 31px;
+    }
+
+    .login-subtitle {
+        font-size: 14px;
+    }
+
+    .login-field {
+        margin-bottom: 22px;
+    }
+
+    .login-input {
+        height: 54px;
+        font-size: 15px;
+    }
+
+    .login-button {
+        min-height: 55px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .login-card {
+        animation: none;
+    }
+
+    .login-input,
+    .login-button,
+    .password-toggle img {
+        transition: none;
+    }
+}
