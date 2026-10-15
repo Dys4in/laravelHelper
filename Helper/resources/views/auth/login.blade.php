@@ -96,7 +96,7 @@
             type="password"
             name="password"
             required
-            autocomplete="current-password"
+            autocomplete="off"
             placeholder="••••••"
             class="login-input"
         />
@@ -196,5 +196,22 @@
 
     {{-- Login JS --}}
     <script src="{{ asset('backend/assets/js/login.js') }}"></script>
+
+    {{-- Remember Me Autocomplete Control --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rememberCheckbox = document.getElementById('remember_me');
+            const passwordInput = document.getElementById('password');
+
+            if (rememberCheckbox && passwordInput) {
+                function updateAutocomplete() {
+                    passwordInput.autocomplete = rememberCheckbox.checked ? 'current-password' : 'off';
+                }
+
+                rememberCheckbox.addEventListener('change', updateAutocomplete);
+                updateAutocomplete();
+            }
+        });
+    </script>
 
 </x-guest-layout>

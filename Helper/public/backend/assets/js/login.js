@@ -41,6 +41,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Remember me - Controlar autocomplete del navegador
+    |--------------------------------------------------------------------------
+    */
+
+    const rememberCheckbox =
+        document.getElementById('remember_me');
+
+    if (rememberCheckbox && passwordInput) {
+
+        function updateAutocomplete() {
+            if (rememberCheckbox.checked) {
+                passwordInput.setAttribute('autocomplete', 'current-password');
+            } else {
+                passwordInput.setAttribute('autocomplete', 'off');
+            }
+        }
+
+        rememberCheckbox.addEventListener('change', updateAutocomplete);
+
+        updateAutocomplete();
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
     | Loading del formulario
     |--------------------------------------------------------------------------
     */

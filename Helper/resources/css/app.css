@@ -1,4 +1,9 @@
+/* resources/css/app.css  (Tailwind 3.4 + Vite)
+   Si ya tienes este archivo, solo agrega la línea marcada con ◄◄.
+   IMPORTANTE: los @import deben ir antes de las directivas @tailwind. */
+
+@import "./styles.css";            /* ◄◄ estilos del dashboard HELPER */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-

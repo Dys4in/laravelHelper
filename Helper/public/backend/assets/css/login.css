@@ -415,6 +415,27 @@
     color: #dc2626;
 }
 
+/* Status message inside form (success/info) */
+.login-form-status {
+    display: block;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #065f46;
+    background-color: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.login-form-status:empty {
+    display: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
 /* Animación de entrada */
 @keyframes login-appear {
     from {

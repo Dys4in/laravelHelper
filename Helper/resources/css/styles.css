@@ -1,0 +1,122 @@
+/* resources/css/styles.css
+   Componentes del dashboard HELPER (frame "dashboard-documents") con @apply.
+   Tailwind 3.4: se importa desde app.css y se compila con Vite. */
+
+@layer components {
+  .hp-body { @apply m-0 bg-gray-50 font-helper text-gray-900; }
+  .hp-shell { @apply flex min-h-screen; }
+  .hp-body [hidden] { display: none !important; }
+
+  /* ---------------- Sidebar ---------------- */
+  .hp-backdrop { @apply hidden; }
+  .hp-backdrop.is-open { @apply fixed inset-0 z-30 block bg-gray-900/40 lg:hidden; }
+
+  .hp-sidebar {
+    @apply fixed inset-y-0 left-0 z-40 flex w-[280px] -translate-x-full flex-col gap-10
+           border-r border-gray-200 bg-white px-5 py-8 transition-transform duration-200
+           lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0;
+  }
+  .hp-sidebar.is-open { @apply translate-x-0; }
+
+  .hp-brand { @apply flex items-center gap-[5px] no-underline; }
+  .hp-brand-logo { @apply h-[41px] w-[53px] object-cover; }
+  .hp-brand-text { @apply flex flex-col gap-0.5; }
+  .hp-brand-title { @apply text-lg font-extrabold leading-none text-gray-900; }
+  .hp-brand-sub { @apply text-[11px] font-medium leading-none text-gray-400; }
+
+  .hp-nav { @apply flex flex-col gap-2; }
+  .hp-nav-item {
+    @apply flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-gray-600 no-underline
+           transition-colors hover:bg-gray-50 hover:text-gray-900;
+  }
+  .hp-nav-item i { @apply text-xl leading-none; }
+  .hp-nav-item.is-active { @apply bg-brand-soft font-bold text-brand hover:bg-brand-soft hover:text-brand; }
+
+  .hp-workspace { @apply mt-auto flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4; }
+  .hp-workspace-title { @apply mb-1 text-[13px] font-bold text-gray-900; }
+  .hp-workspace-meta { @apply text-xs text-gray-600; }
+  .hp-progress { @apply h-1.5 w-full overflow-hidden rounded-[3px] bg-gray-200; }
+  .hp-progress-bar { @apply h-full bg-brand transition-[width] duration-300; }
+  .hp-workspace-link { @apply text-xs font-semibold text-brand no-underline hover:underline; }
+
+  /* ---------------- Main / Topbar ---------------- */
+  .hp-main { @apply flex min-w-0 flex-1 flex-col; }
+
+  .hp-topbar {
+    @apply flex items-center justify-between gap-4 border-b border-gray-200 bg-white px-5 py-[18px] lg:px-10;
+  }
+  .hp-topbar-left { @apply flex items-center gap-3; }
+  .hp-page-title { @apply text-[22px] font-bold leading-none text-gray-900; }
+  .hp-topbar-actions { @apply flex items-center gap-4; }
+
+  .hp-sidebar-toggle {
+    @apply flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-lg border border-gray-200
+           bg-white text-xl leading-none lg:hidden;
+  }
+
+  .hp-search {
+    @apply hidden h-[38px] w-[300px] items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3
+           text-gray-400 focus-within:border-brand md:flex;
+  }
+  .hp-search input {
+    @apply min-w-0 flex-1 rounded-none border-0 bg-transparent p-0 text-[13px] text-gray-900 shadow-none outline-none placeholder:text-gray-400;
+  }
+  /* @tailwindcss/forms añade un anillo azul en :focus; lo anulamos */
+  .hp-search input:focus { @apply border-0 shadow-none outline-none ring-0; }
+
+  .hp-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-brand px-4 py-2.5
+           text-sm font-semibold text-white no-underline transition hover:brightness-110;
+  }
+  .hp-btn-primary span { @apply hidden sm:inline; }
+
+  .hp-avatar { @apply h-[38px] w-[38px] shrink-0 rounded-full object-cover; }
+
+  /* ---------------- Content ---------------- */
+  .hp-content { @apply flex flex-col gap-8 p-5 lg:p-10; }
+
+  .hp-overview { @apply flex flex-wrap items-center justify-between gap-4; }
+  .hp-overview-title { @apply mb-1 text-xl font-bold text-gray-900; }
+  .hp-overview-sub { @apply text-sm text-gray-600; }
+
+  /* Contadores (botones que filtran) */
+  .hp-stats { @apply flex flex-wrap gap-3; }
+  .hp-stat {
+    @apply flex cursor-pointer gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[13px]
+           transition-colors hover:border-brand;
+  }
+  .hp-stat-label { @apply font-semibold text-gray-400; }
+  .hp-stat-value { @apply font-bold text-gray-900; }
+  .hp-stat[aria-pressed="true"] { @apply border-brand bg-brand-soft; }
+  .hp-stat[aria-pressed="true"] .hp-stat-label,
+  .hp-stat[aria-pressed="true"] .hp-stat-value { @apply text-brand; }
+
+  /* ---------------- Cards ---------------- */
+  .hp-docs-grid { @apply grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3; }
+
+  .hp-card { @apply flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white; }
+  .hp-card-thumb { @apply h-40 bg-gray-50; }
+  .hp-card-thumb img { @apply block h-40 w-full object-cover; }
+  .hp-card-body { @apply flex flex-col gap-3 p-5; }
+  .hp-card-row { @apply flex min-h-[23px] items-center justify-between; }
+
+  .hp-badge { @apply inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold uppercase leading-[15px]; }
+  .hp-badge--completed { @apply bg-success-bg text-success-text; }
+  .hp-badge--draft { @apply bg-gray-200 text-gray-600; }
+
+  .hp-card-menu { @apply ml-auto cursor-pointer border-0 bg-transparent p-0 text-lg leading-none text-gray-600 hover:text-gray-900; }
+
+  .hp-card-details { @apply flex flex-col gap-1; }
+  .hp-card-code { @apply truncate text-[15px] font-bold text-gray-900; }
+  .hp-card-date { @apply text-[13px] text-gray-600; }
+
+  .hp-btn-outline {
+    @apply flex items-center justify-center rounded-lg border border-gray-200 bg-transparent px-3 py-2
+           text-[13px] font-semibold text-gray-600 no-underline transition
+           hover:border-brand hover:bg-brand-soft hover:text-brand;
+  }
+
+  .hp-empty {
+    @apply col-span-full rounded-xl border border-dashed border-gray-200 bg-white p-12 text-center text-gray-600;
+  }
+}
