@@ -9,15 +9,18 @@ use Symfony\Component\HttpFoundation\Response;
 class RoleMiddleware
 {
     /**
-     * Handle an incoming request.
+     * Uso: ->middleware('role:admin')  o  ->middleware('role:admin,mod')
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next, $role): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if($request->user()->role !== $role){
-            return redirect()->route('dashboard');
+        $user = $request->user();
+
+        if (! $user || ! $user->hasRole(...$roles)) {
+            abort(403, 'No tienes permiso para acceder a esta sección.');
         }
+
         return $next($request);
     }
 }

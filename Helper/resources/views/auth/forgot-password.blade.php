@@ -61,24 +61,15 @@
                             autofocus
                             autocomplete="username"
                             placeholder="dsarah.villarica@fareva.com"
-                            class="login-input"
+                            :class="$errors->has('email') ? 'login-input login-input--error' : 'login-input'"
                         />
 
                     </div>
 
-                    <x-input-error
-                        :messages="$errors->get('email')"
-                        class="login-error"
-                    />
 
                 </div>
 
 
-                {{-- Session Status --}}
-                <x-auth-session-status
-                    class="login-form-status"
-                    :status="session('status')"
-                />
 
                 {{-- Submit --}}
                 <button
@@ -112,5 +103,7 @@
 
     {{-- Forgot Password JS --}}
     <script src="{{ asset('backend/assets/js/login.js') }}"></script>
+
+    <x-toast />
 
 </x-guest-layout>

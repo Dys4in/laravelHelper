@@ -6,11 +6,6 @@
         href="{{ asset('backend/assets/css/login.css') }}"
     >
 
-    {{-- Session Status --}}
-    <x-auth-session-status
-        class="login-status"
-        :status="session('status')"
-    />
 
     <main class="login-page">
 
@@ -67,15 +62,11 @@
                             autofocus
                             autocomplete="username"
                             placeholder="dsarah.villarica@fareva.com"
-                            class="login-input"
+                            :class="$errors->has('email') ? 'login-input login-input--error' : 'login-input'"
                         />
 
                     </div>
 
-                    <x-input-error
-                        :messages="$errors->get('email')"
-                        class="login-error"
-                    />
 
                 </div>
 
@@ -98,7 +89,7 @@
             required
             autocomplete="off"
             placeholder="••••••"
-            class="login-input"
+            :class="$errors->has('password') ? 'login-input login-input--error' : 'login-input'"
         />
 
         <button
@@ -116,10 +107,6 @@
 
     </div>
 
-    <x-input-error
-        :messages="$errors->get('password')"
-        class="login-error"
-    />
 
 </div>
 
@@ -172,23 +159,10 @@
             </form>
 
 
-            {{-- Register --}}
-            @if (Route::has('register'))
-
-                <div class="register-link">
-
-                    <span>
-                        Don't have an account?
-                    </span>
-
-                    <a href="{{ route('register') }}">
-                        Sign up
-                    </a>
-
-                </div>
-
-            @endif
-
+            {{-- Acceso solo por solicitud --}}
+            <div class="register-link">
+                <span>¿Necesitas acceso? Solicítalo al administrador del sistema.</span>
+            </div>
         </section>
 
     </main>
@@ -213,5 +187,7 @@
             }
         });
     </script>
+
+    <x-toast />
 
 </x-guest-layout>

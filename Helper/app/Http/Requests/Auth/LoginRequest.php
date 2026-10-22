@@ -12,17 +12,12 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
     /**
-     * Get the validation rules that apply to the request.
-     *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
@@ -34,7 +29,8 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * Attempt to authenticate the request's credentials.
+     * Valida credenciales y, además, que la cuenta pueda entrar
+     * (usuario activo y, salvo admin, con un área activa).
      *
      * @throws ValidationException
      */
@@ -50,14 +46,18 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Las credenciales son correctas: ahora comprobamos si la cuenta está habilitada.
+        if ($reason = Auth::user()->accessDeniedReason()) {
+            Auth::guard('web')->logout();
+
+            throw ValidationException::withMessages([
+                'email' => $reason,
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 
-    /**
-     * Ensure the login request is not rate limited.
-     *
-     * @throws ValidationException
-     */
     public function ensureIsNotRateLimited(): void
     {
         if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
@@ -76,9 +76,6 @@ class LoginRequest extends FormRequest
         ]);
     }
 
-    /**
-     * Get the rate limiting throttle key for the request.
-     */
     public function throttleKey(): string
     {
         return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());

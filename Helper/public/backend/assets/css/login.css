@@ -504,3 +504,14 @@
         transition: none;
     }
 }
+
+
+/* Campo con error de validación (el detalle se muestra en el aviso flotante) */
+.login-input.login-input--error {
+    border-color: #dc2626;
+}
+
+.login-input.login-input--error:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+}
