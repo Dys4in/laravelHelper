@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Support\Audit;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -41,13 +42,19 @@ class LoginRequest extends FormRequest
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
+            Audit::log('auth.login_failed', 'Intento de inicio de sesión fallido', meta: ['email' => (string) $this->input('email')]);
+
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
         }
 
         // Las credenciales son correctas: ahora comprobamos si la cuenta está habilitada.
-        if ($reason = Auth::user()->accessDeniedReason()) {
+        $user = Auth::user();
+
+        if ($reason = $user->accessDeniedReason()) {
+            Audit::log('auth.login_blocked', 'Acceso denegado: '.$reason, actor: $user, meta: ['email' => $user->email]);
+
             Auth::guard('web')->logout();
 
             throw ValidationException::withMessages([
@@ -65,6 +72,8 @@ class LoginRequest extends FormRequest
         }
 
         event(new Lockout($this));
+
+        Audit::log('auth.lockout', 'Inicio de sesión bloqueado temporalmente por demasiados intentos', meta: ['email' => (string) $this->input('email')]);
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 

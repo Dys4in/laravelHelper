@@ -2,28 +2,31 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
+use App\Models\Document;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 
 class GenerateDocumentRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return Gate::allows('create', Document::class);
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'template_id' => ['required', 'integer', 'exists:templates,id'],
+            'title' => ['required', 'string', 'max:150'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'template_id.required' => 'Elige una plantilla.',
+            'template_id.exists' => 'La plantilla elegida ya no existe.',
+            'title.required' => 'Ponle un título al documento.',
         ];
     }
 }

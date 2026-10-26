@@ -21,8 +21,12 @@ class UserSeeder extends Seeder
 
         $users = [
             ['Admin User', 'adminUser', 'admin@gmail.com', UserRole::Admin, null],
-            ['Mod User', 'moderUser', 'mod@gmail.com', UserRole::Mod, $verificaciones?->id],
-            ['User', 'user', 'user@gmail.com', UserRole::User, $validaciones?->id],
+            // Verificaciones
+            ['Mod Verificaciones', 'modVerif', 'mod@gmail.com', UserRole::Mod, $verificaciones?->id],
+            ['User Verificaciones', 'userVerif', 'user@gmail.com', UserRole::User, $verificaciones?->id],
+            // Validaciones (para comprobar que cada área solo ve lo suyo)
+            ['Mod Validaciones', 'modValid', 'mod2@gmail.com', UserRole::Mod, $validaciones?->id],
+            ['User Validaciones', 'userValid', 'user2@gmail.com', UserRole::User, $validaciones?->id],
         ];
 
         foreach ($users as [$name, $username, $email, $role, $areaId]) {

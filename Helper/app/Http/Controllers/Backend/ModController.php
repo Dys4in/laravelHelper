@@ -2,12 +2,20 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Http\Controllers\Concerns\BuildsDocumentBoard;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 
 class ModController extends Controller
 {
-    public function dashboard(){
-        return view('mod.dashboard');
+    use BuildsDocumentBoard;
+
+    public function dashboard()
+    {
+        $area = auth()->user()->area?->name ?? 'tu área';
+
+        return $this->documentBoard(
+            'Documentos de '.$area,
+            'Revisa, edita y regula los documentos de los usuarios de tu área.'
+        );
     }
 }

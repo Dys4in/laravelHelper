@@ -2,12 +2,18 @@
 
 namespace App\Http\Controllers\Backend;
 
+use App\Http\Controllers\Concerns\BuildsDocumentBoard;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-    public function dashboard(){
-        return view('user.dashboard');
+    use BuildsDocumentBoard;
+
+    public function dashboard()
+    {
+        return $this->documentBoard(
+            'Mis documentos',
+            'Crea documentos desde las plantillas de tu área y edítalos.'
+        );
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use Auditable, HasFactory, Notifiable;
 
     /**
      * OJO: role, status y area_id son asignables en masa, así que solo deben
@@ -93,5 +94,20 @@ class User extends Authenticatable
         }
 
         return null;
+    }
+
+    public function auditType(): string
+    {
+        return 'user';
+    }
+
+    public function auditExcept(): array
+    {
+        return ['remember_token', 'email_verified_at'];
+    }
+
+    public function auditMasked(): array
+    {
+        return ['password'];
     }
 }

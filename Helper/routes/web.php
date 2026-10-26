@@ -5,7 +5,10 @@ use App\Http\Controllers\Backend\Admin\AdminUserController;
 use App\Http\Controllers\Backend\AdminController;
 use App\Http\Controllers\Backend\ModController;
 use App\Http\Controllers\Backend\UserController;
+use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -28,6 +31,31 @@ Route::middleware(['auth', 'active'])->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    // Documentos: se crean a partir de una plantilla y se editan en OnlyOffice
+    Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
+    Route::get('/documents/create', [DocumentController::class, 'create'])->name('documents.create');
+    Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
+    Route::get('/documents/{document}/edit', [DocumentController::class, 'edit'])->name('documents.edit');
+    Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+    Route::patch('/documents/{document}/status', [DocumentController::class, 'toggleStatus'])->name('documents.status');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Moderador y Administrador
+|--------------------------------------------------------------------------
+| Plantillas: el moderador gestiona las de su área; el admin, todas.
+| Auditoría: el admin ve todos los movimientos; el moderador, los de su área.
+| Los límites finos los aplican las Policies, no solo el middleware.
+*/
+Route::middleware(['auth', 'active', 'role:admin,mod'])->group(function () {
+    Route::resource('templates', TemplateController::class)->except(['show']);
+    Route::patch('templates/{template}/status', [TemplateController::class, 'toggleStatus'])->name('templates.status');
+    Route::get('templates/{template}/download', [TemplateController::class, 'download'])->name('templates.download');
+
+    Route::get('/audit', [AuditLogController::class, 'index'])->name('audit.index');
+    Route::get('/audit/feed', [AuditLogController::class, 'feed'])->name('audit.feed');
 });
 
 /*
@@ -47,8 +75,6 @@ Route::middleware(['auth', 'active', 'role:admin'])
         Route::resource('areas', AdminAreaController::class)->except(['show', 'create']);
         Route::patch('areas/{area}/status', [AdminAreaController::class, 'toggleStatus'])->name('areas.status');
 
-        // Cuando lleguemos a documentos/plantillas:
-        // Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
     });
 
 /*

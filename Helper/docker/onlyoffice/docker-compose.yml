@@ -1,0 +1,34 @@
+# OnlyOffice Document Server para desarrollo (Docker Desktop).
+#
+#   cd docker/onlyoffice
+#   copy .env.example .env      (Windows)   |   cp .env.example .env   (Linux/Mac)
+#   # edita .env y pon el MISMO secreto que ONLYOFFICE_JWT_SECRET del .env de Laravel
+#   docker compose up -d
+#
+# La primera vez tarda 1-2 minutos en arrancar. Comprueba: http://localhost:8080/healthcheck  →  true
+name: helper-onlyoffice
+
+services:
+  documentserver:
+    image: onlyoffice/documentserver:latest
+    container_name: helper-onlyoffice
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      - JWT_ENABLED=true
+      - JWT_SECRET=${ONLYOFFICE_JWT_SECRET:?Define ONLYOFFICE_JWT_SECRET en docker/onlyoffice/.env}
+      - JWT_HEADER=Authorization
+      # Laravel corre en la máquina local (IP privada): sin esto el Document Server bloquea la conexión.
+      - ALLOW_PRIVATE_IP_ADDRESS=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - oo_data:/var/www/onlyoffice/Data
+      - oo_logs:/var/log/onlyoffice
+      - oo_lib:/var/lib/onlyoffice
+
+volumes:
+  oo_data:
+  oo_logs:
+  oo_lib:

@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Area extends Model
 {
-    use SoftDeletes;
+    use Auditable, SoftDeletes;
 
     public const ACTIVE = 'active';
     public const SUSPENDED = 'suspended';
@@ -33,5 +34,15 @@ class Area extends Model
     public function scopeActive($query)
     {
         return $query->where('status', self::ACTIVE);
+    }
+
+    public function auditType(): string
+    {
+        return 'area';
+    }
+
+    public function auditAreaId(): ?int
+    {
+        return $this->id;
     }
 }
