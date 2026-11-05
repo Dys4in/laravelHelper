@@ -6,7 +6,8 @@
           data-confirm="Texto de la pregunta"
           data-confirm-title="Título"            (opcional)
           data-confirm-text="Texto del botón"    (opcional, por defecto "Confirmar")
-          data-confirm-variant="danger|warning|primary"   (opcional, por defecto primary)>
+          data-confirm-variant="danger|warning|primary"   (opcional, por defecto primary)
+          data-confirm-phrase="eliminar">        (opcional: exige escribir esa palabra)
 
   Uso desde JavaScript (devuelve una promesa con true/false):
     confirmDialog({ title: '...', message: '...', confirmText: 'Eliminar', variant: 'danger' })
@@ -79,11 +80,29 @@
       head.appendChild(text);
       panel.appendChild(head);
 
+      var phraseInput = null;
+      if (opts.phrase) {
+        var phraseBox = el('div', 'mt-4');
+        var phraseLabel = el('label', 'block text-xs font-semibold text-gray-600', 'Escribe «' + opts.phrase + '» para confirmar');
+        phraseLabel.setAttribute('for', 'confirm-phrase');
+        phraseInput = el('input', 'mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20');
+        phraseInput.type = 'text';
+        phraseInput.id = 'confirm-phrase';
+        phraseInput.autocomplete = 'off';
+        phraseInput.spellcheck = false;
+        phraseBox.appendChild(phraseLabel);
+        phraseBox.appendChild(phraseInput);
+        panel.appendChild(phraseBox);
+      }
+
       var foot = el('div', 'mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end');
       var cancel = el('button', 'rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300', opts.cancelText || 'Cancelar');
       cancel.type = 'button';
-      var ok = el('button', 'rounded-lg px-4 py-2 text-sm font-semibold text-white transition focus:outline-none focus-visible:ring-2 ' + v.btn, opts.confirmText || 'Confirmar');
+      var okClasses = 'rounded-lg px-4 py-2 text-sm font-semibold text-white transition focus:outline-none focus-visible:ring-2 ' + v.btn;
+      if (opts.phrase) okClasses += ' disabled:cursor-not-allowed disabled:opacity-50';
+      var ok = el('button', okClasses, opts.confirmText || 'Confirmar');
       ok.type = 'button';
+      if (opts.phrase) ok.disabled = true;
       if (!opts.alert) foot.appendChild(cancel);
       foot.appendChild(ok);
       panel.appendChild(foot);
@@ -95,7 +114,20 @@
         overlay.classList.remove('opacity-0');
         panel.classList.remove('scale-95', 'opacity-0');
       });
-      (opts.alert ? ok : cancel).focus(); // en alertas solo hay un botón
+      (phraseInput || (opts.alert ? ok : cancel)).focus(); // en alertas solo hay un botón
+
+      if (phraseInput) {
+        phraseInput.addEventListener('input', function () {
+          var expected = String(opts.phrase).trim().toLocaleLowerCase();
+          ok.disabled = phraseInput.value.trim().toLocaleLowerCase() !== expected;
+        });
+        phraseInput.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (!ok.disabled) finish(true);
+          }
+        });
+      }
 
       var done = false;
       function finish(result) {
@@ -115,10 +147,13 @@
       function onKey(e) {
         if (e.key === 'Escape') { e.preventDefault(); finish(false); return; }
         if (e.key === 'Tab') {            // el foco se queda dentro de la ventana
-          if (opts.alert) { e.preventDefault(); ok.focus(); return; }
-          if (e.shiftKey && document.activeElement === cancel) { e.preventDefault(); ok.focus(); }
-          else if (!e.shiftKey && document.activeElement === ok) { e.preventDefault(); cancel.focus(); }
-          else if (!panel.contains(document.activeElement)) { e.preventDefault(); cancel.focus(); }
+          var focusables = Array.prototype.slice.call(panel.querySelectorAll('input, button')).filter(function (n) { return !n.disabled; });
+          if (!focusables.length) return;
+          var first = focusables[0];
+          var last = focusables[focusables.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+          else if (!panel.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
         }
       }
 
@@ -142,7 +177,8 @@
       title: form.getAttribute('data-confirm-title') || undefined,
       confirmText: form.getAttribute('data-confirm-text') || undefined,
       cancelText: form.getAttribute('data-confirm-cancel') || undefined,
-      variant: form.getAttribute('data-confirm-variant') || undefined
+      variant: form.getAttribute('data-confirm-variant') || undefined,
+      phrase: form.getAttribute('data-confirm-phrase') || undefined
     }).then(function (ok) {
       if (ok) {
         if (window.HelperClickGuard) window.HelperClickGuard.lockForm(form);

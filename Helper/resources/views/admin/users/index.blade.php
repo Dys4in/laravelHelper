@@ -11,8 +11,11 @@
 
   {{-- Filtros --}}
   <form method="GET" action="{{ route('admin.users.index') }}" class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
-    <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar por nombre, abreviatura, correo o usuario"
-           class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
+    <div class="hp-search" role="search">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar por nombre, abreviatura, correo o usuario"
+             aria-label="Buscar usuarios" autocomplete="off">
+    </div>
 
     <select name="area" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
       <option value="">Todas las áreas</option>

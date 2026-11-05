@@ -17,8 +17,11 @@
 
   {{-- Filtros --}}
   <form method="GET" action="{{ route('audit.index') }}" data-autosubmit class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
-    <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Buscar por el usuario, detalle o area..."
-           class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand sm:col-span-2">
+    <div class="hp-search sm:col-span-2" role="search">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Buscar por el usuario, detalle o area..."
+             aria-label="Buscar en el registro de auditoría" autocomplete="off">
+    </div>
 
     <select name="module" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
       <option value="">Todos los módulos</option>

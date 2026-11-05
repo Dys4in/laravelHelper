@@ -6,6 +6,10 @@
   $supervise = $supervise ?? false;
   $done = $doc->isCompleted();
   $next = $done ? 'draft' : 'completed';
+  $actionCount = 1
+      + (auth()->user()->can('changeStatus', $doc) ? 1 : 0)
+      + (auth()->user()->can('delete', $doc) ? 1 : 0);
+  $stackFoot = $supervise ? $actionCount !== 3 : $done;
   $canEdit = auth()->user()->can('edit', $doc);
   $canReview = auth()->user()->can('review', $doc);
   $openLabel = $canEdit ? 'Abrir en el editor' : ($canReview ? 'Revisar documento' : 'Ver documento');
@@ -49,10 +53,10 @@
       <i class="bi {{ $canEdit || $canReview ? 'bi-pencil-square' : 'bi-eye' }} mr-2" aria-hidden="true"></i>{{ $openLabel }}
     </a>
 
-    <div class="hp-card-foot">
+    <div class="hp-card-foot{{ $stackFoot ? ' hp-card-foot--column' : '' }}">
       {{-- Descarga: solo documentos completados (el backend también lo exige). --}}
       @can('download', $doc)
-        <a href="{{ route('documents.download', $doc) }}" class="hp-btn-sm">
+        <a href="{{ route('documents.download', $doc) }}" class="{{ $done ? 'hp-btn-outline' : 'hp-btn-sm' }}">
           <i class="bi bi-download" aria-hidden="true"></i> Descargar
         </a>
       @else
@@ -70,7 +74,7 @@
           @csrf
           @method('PATCH')
           <input type="hidden" name="status" value="{{ $next }}">
-          <button type="submit" class="hp-btn-sm {{ $done ? '' : 'hp-btn-sm--ok' }}">
+          <button type="submit" class="{{ $done ? 'hp-btn-outline' : 'hp-btn-sm hp-btn-sm--ok' }}">
             <i class="bi {{ $done ? 'bi-arrow-counterclockwise' : 'bi-check2-circle' }}" aria-hidden="true"></i> {{ $done ? 'Volver a borrador' : 'Marcar completado' }}
           </button>
         </form>
@@ -80,7 +84,8 @@
       @can('delete', $doc)
         <form method="POST" action="{{ route('documents.destroy', $doc) }}"
               data-confirm="Se eliminará «{{ $doc->title }}» ({{ $doc->code }}) y su archivo. Esta acción no se puede deshacer."
-              data-confirm-title="Eliminar documento" data-confirm-text="Eliminar" data-confirm-variant="danger">
+              data-confirm-title="Eliminar documento" data-confirm-text="Eliminar" data-confirm-variant="danger"
+              data-confirm-phrase="eliminar">
           @csrf
           @method('DELETE')
           <button type="submit" class="hp-btn-sm hp-btn-sm--danger">

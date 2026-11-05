@@ -25,7 +25,7 @@
 
   {{-- Buscador y, al otro lado, "Nuevo documento" (lleva a Plantillas) --}}
   <section class="flex flex-wrap items-center justify-between gap-3">
-    <form class="hp-search" role="search" onsubmit="return false">
+    <form class="hp-search hp-search--block" role="search" onsubmit="return false">
       <i class="bi bi-search" aria-hidden="true"></i>
       <input id="docSearch" type="search" placeholder="Buscar por código o título..." aria-label="Buscar en mis documentos" autocomplete="off">
     </form>
