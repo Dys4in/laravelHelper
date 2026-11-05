@@ -9,6 +9,7 @@ use App\Models\Area;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AdminUserController extends Controller
@@ -20,10 +21,17 @@ class AdminUserController extends Controller
         $users = User::query()
             ->with('area')
             ->when($search !== '', function ($query) use ($search) {
-                $query->where(function ($w) use ($search) {
+                // La abreviatura se calcula en PHP, así que resolvemos los IDs que coinciden.
+                $abbreviationIds = User::query()
+                    ->get(['id', 'name'])
+                    ->filter(fn (User $user) => Str::contains(Str::lower($user->short_name), Str::lower($search)))
+                    ->pluck('id');
+
+                $query->where(function ($w) use ($search, $abbreviationIds) {
                     $w->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('username', 'like', "%{$search}%");
+                        ->orWhere('username', 'like', "%{$search}%")
+                        ->when($abbreviationIds->isNotEmpty(), fn ($q) => $q->orWhereIn('id', $abbreviationIds));
                 });
             })
             ->when($request->filled('area'), fn ($q) => $q->where('area_id', $request->integer('area')))
@@ -36,15 +44,9 @@ class AdminUserController extends Controller
             'users' => $users,
             'areas' => Area::orderBy('name')->get(),
             'roles' => UserRole::cases(),
-        ]);
-    }
-
-    public function create(): View
-    {
-        return view('admin.users.create', [
-            'user' => new User(['role' => UserRole::User, 'status' => 'active']),
-            'areas' => Area::active()->orderBy('name')->get(),
-            'roles' => UserRole::cases(),
+            // Formulario de "Nuevo usuario" (ventana)
+            'formAreas' => Area::active()->orderBy('name')->get(),
+            'newUser' => new User(['role' => UserRole::User, 'status' => 'active']),
         ]);
     }
 

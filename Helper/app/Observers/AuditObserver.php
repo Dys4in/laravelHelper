@@ -7,13 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 
 /**
- * Registra altas, cambios y bajas de Usuarios, Áreas y Plantillas.
- * (Los documentos se registran a mano porque sus guardados vienen de OnlyOffice.)
+ * Registra altas, cambios y bajas de Usuarios, Áreas, Plantillas y Documentos.
+ * Los guardados que llegan desde OnlyOffice se registran aparte (document.saved).
  */
 class AuditObserver
 {
     /** Campos que no aportan al historial. */
-    private const IGNORED = ['updated_at', 'created_at', 'remember_token', 'deleted_at', 'email_verified_at', 'file_path'];
+    private const IGNORED = ['updated_at', 'created_at', 'remember_token', 'deleted_at', 'email_verified_at', 'file_path', 'doc_key', 'version', 'last_saved_at', 'updated_by'];
 
     /** Campos cuyo valor nunca se guarda (solo se anota que cambiaron). */
     private const SECRET = ['password'];

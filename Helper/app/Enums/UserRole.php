@@ -22,8 +22,8 @@ enum UserRole: string
     {
         return match ($this) {
             self::Admin => 'admin.dashboard',
-            self::Mod => 'mod.dashboard',
-            self::User => 'user.dashboard',
+            self::Mod => 'documents.index',
+            self::User => 'documents.index',
         };
     }
 }

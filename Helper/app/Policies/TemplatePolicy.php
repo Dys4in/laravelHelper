@@ -6,14 +6,16 @@ use App\Models\Template;
 use App\Models\User;
 
 /**
- * El moderador sube y administra las plantillas de SU área.
- * El administrador controla las de todas las áreas (y las generales, sin área).
+ * Plantillas:
+ *  - Todos los usuarios ven las de su área para crear documentos con "Usar plantilla".
+ *  - El moderador sube y administra las de SU área.
+ *  - El administrador controla las de todas las áreas (y las generales, sin área).
  */
 class TemplatePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('admin', 'mod');
+        return true;
     }
 
     public function create(User $user): bool

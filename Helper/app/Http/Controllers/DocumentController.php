@@ -6,7 +6,9 @@ use App\Models\Area;
 use App\Models\Document;
 use App\Models\Template;
 use App\Models\User;
-use App\Support\Audit;
+use App\Services\AuditLogger;
+use App\Support\DocxFonts;
+use App\Support\DocxValidator;
 use App\Support\OnlyOfficeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,54 +22,65 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocumentController extends Controller
 {
+    /** "Mis documentos": los que creó el usuario. Es la pantalla de inicio de usuarios y moderadores. */
     public function index(Request $request): View
+    {
+        return view('documents.index', [
+            'documents' => Document::query()
+                ->ownedBy($request->user())
+                ->with(['user', 'editor', 'area', 'template'])
+                ->latest('updated_at')
+                ->get(),
+        ]);
+    }
+
+    /**
+     * Supervisión: moderador = documentos de su área; administrador = todos.
+     * Solo supervisa; no se crean documentos desde aquí.
+     */
+    public function supervision(Request $request): View
     {
         $user = $request->user();
         $search = trim((string) $request->input('q'));
-        $canRegulate = $user->hasRole('admin', 'mod');
 
         $documents = Document::query()
-            ->with(['user', 'area', 'template', 'editor'])
-            ->visibleTo($user)
+            ->supervisedBy($user)
+            ->with(['user', 'editor', 'area', 'template'])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($w) use ($search) {
-                    $w->where('title', 'like', "%{$search}%")->orWhere('code', 'like', "%{$search}%");
+                    $w->where('title', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%")
+                        ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%"));
                 });
             })
             ->when($user->isAdmin() && $request->filled('area'), fn ($q) => $q->where('area_id', $request->integer('area')))
-            ->when($canRegulate && $request->filled('author'), fn ($q) => $q->where('user_id', $request->integer('author')))
-            ->when(in_array($request->input('status'), ['draft', 'completed'], true), fn ($q) => $q->where('status', $request->input('status')))
+            ->when($request->filled('author'), fn ($q) => $q->where('user_id', $request->integer('author')))
+            ->when(in_array($request->input('status'), [Document::DRAFT, Document::COMPLETED], true), fn ($q) => $q->where('status', $request->input('status')))
             ->latest('updated_at')
-            ->paginate(15)
+            ->paginate(12)
             ->withQueryString();
 
-        return view('documents.index', [
+        return view('documents.supervision', [
             'documents' => $documents,
             'areas' => $user->isAdmin() ? Area::orderBy('name')->get() : collect(),
-            // Quien regula puede filtrar por autor: el moderador, solo entre los de su área.
-            'authors' => $canRegulate
-                ? User::query()
-                    ->when(! $user->isAdmin(), fn ($q) => $q->where('area_id', $user->area_id ?? 0))
-                    ->orderBy('name')
-                    ->get(['id', 'name'])
-                : collect(),
+            'authors' => User::query()
+                ->when(! $user->isAdmin(), fn ($q) => $q->where('area_id', $user->area_id ?? 0))
+                ->orderBy('name')
+                ->get(['id', 'name']),
         ]);
     }
 
-    /** Paso 1 del flujo: elegir una plantilla ya cargada. */
-    public function create(Request $request): View
+    /** Ya no hay pantalla propia: crear un documento empieza eligiendo plantilla. */
+    public function create(): RedirectResponse
     {
-        $user = $request->user();
-
-        return view('documents.create', [
-            'templates' => Template::query()->active()->availableFor($user)->with('area')->orderBy('name')->get(),
-            'areas' => $user->isAdmin() ? Area::active()->orderBy('name')->get() : collect(),
-        ]);
+        return redirect()->route('templates.index');
     }
 
-    /** Paso 2: se copia la plantilla y se abre la copia en el editor. */
+    /** "Usar plantilla": se copia la plantilla y se abre la copia en el editor. */
     public function store(Request $request, OnlyOfficeService $oo): RedirectResponse
     {
+        Gate::authorize('create', Document::class);
+
         $user = $request->user();
 
         $data = $request->validate([
@@ -90,19 +103,20 @@ class DocumentController extends Controller
         $disk = $oo->disk();
 
         if (! $disk->exists($template->file_path)) {
-            return back()->withInput()->with('error', 'El archivo de la plantilla no se encontró en el servidor. Avisa al administrador.');
+            return back()->withInput()->with('error', 'El archivo de la plantilla no se encontró en el servidor. Avisa al moderador de tu área.');
         }
 
         $areaId = $user->isAdmin() ? (int) $data['area_id'] : $user->area_id;
         $path = 'documents/'.Str::uuid().'.docx';
 
         $disk->copy($template->file_path, $path);
+        $this->useArialByDefault($oo, $path);
 
         try {
             $document = DB::transaction(function () use ($data, $user, $areaId, $template, $path) {
                 $document = Document::create([
                     'title' => $data['title'],
-                    'status' => 'draft',
+                    'status' => Document::DRAFT,
                     'user_id' => $user->id,
                     'area_id' => $areaId,
                     'template_id' => $template->id,
@@ -112,7 +126,8 @@ class DocumentController extends Controller
                     'updated_by' => $user->id,
                 ]);
 
-                $document->update(['code' => sprintf('DOC-%s-%05d', now()->format('Y'), $document->id)]);
+                // Sin eventos: no es un cambio del usuario, solo se completa el código.
+                $document->updateQuietly(['code' => sprintf('DOC-%s-%05d', now()->format('Y'), $document->id)]);
 
                 return $document;
             });
@@ -124,7 +139,12 @@ class DocumentController extends Controller
         return redirect()->route('documents.edit', $document)->with('status', 'Documento creado a partir de la plantilla.');
     }
 
-    /** Abre el documento en OnlyOffice. */
+    /**
+     * Abre el documento en OnlyOffice. El modo depende de quién entra:
+     *  - completado        → solo lectura, para cualquier usuario
+     *  - el creador        → edición
+     *  - moderador / admin → revisión (control de cambios), si no son el creador
+     */
     public function edit(Request $request, Document $document, OnlyOfficeService $oo): View|RedirectResponse
     {
         Gate::authorize('view', $document);
@@ -133,50 +153,108 @@ class DocumentController extends Controller
             return redirect()->route('documents.index')->with('error', 'El archivo de este documento no se encontró en el servidor.');
         }
 
-        // Completado = solo lectura para usuarios; moderador y admin siguen pudiendo editar.
-        $canEdit = Gate::allows('edit', $document);
+        $document->loadMissing('user');
+
+        $mode = match (true) {
+            Gate::allows('edit', $document) => 'edit',
+            Gate::allows('review', $document) => 'review',
+            default => 'view',
+        };
 
         try {
-            $config = $oo->editorConfig($document, $request->user(), $canEdit);
+            $config = $oo->editorConfig($document, $request->user(), $mode);
         } catch (RuntimeException $e) {
             return redirect()->route('documents.index')->with('error', $e->getMessage());
         }
 
-        Audit::log(
+        AuditLogger::log(
             'document.opened',
-            ($canEdit ? 'Abrió' : 'Abrió en modo lectura')." el documento «{$document->title}»",
+            match ($mode) {
+                'edit' => 'Abrió',
+                'review' => 'Abrió en modo revisión',
+                default => 'Abrió en modo lectura',
+            }." el documento «{$document->title}»",
             $document,
         );
 
         return view('documents.edit', [
             'document' => $document,
             'config' => $config,
-            'canEdit' => $canEdit,
+            'mode' => $mode,
             'apiUrl' => $oo->apiScriptUrl(),
             'serverUrl' => config('onlyoffice.url'),
         ]);
     }
 
-    /** Regular: el moderador (de su área) o el admin marcan el documento como completado o lo reabren. */
-    public function toggleStatus(Document $document): RedirectResponse
+    /** Completar / reabrir: moderador (de su área) y administrador. */
+    public function toggleStatus(Request $request, Document $document): RedirectResponse
     {
-        Gate::authorize('manage', $document);
+        Gate::authorize('changeStatus', $document);
 
-        $document->update(['status' => $document->status === 'completed' ? 'draft' : 'completed']);
+        $target = $request->input('status');
 
-        return back()->with('status', $document->status === 'completed'
-            ? "«{$document->title}» se marcó como completado: los usuarios ya no pueden editarlo."
-            : "«{$document->title}» se reabrió: los usuarios pueden volver a editarlo.");
+        if (! in_array($target, [Document::DRAFT, Document::COMPLETED], true)) {
+            $target = $document->isCompleted() ? Document::DRAFT : Document::COMPLETED;
+        }
+
+        $document->update(['status' => $target]);
+
+        return back()->with('status', $document->isCompleted()
+            ? "«{$document->title}» se marcó como completado: ya se puede descargar y los usuarios no pueden editarlo."
+            : "«{$document->title}» volvió a borrador: los usuarios pueden editarlo de nuevo y no se puede descargar.");
     }
 
-    public function download(Document $document, OnlyOfficeService $oo): StreamedResponse
+    /** Descarga: solo documentos completados (el admin siempre). */
+    public function download(Document $document, OnlyOfficeService $oo): StreamedResponse|RedirectResponse
     {
         Gate::authorize('view', $document);
 
+        if (! Gate::allows('download', $document)) {
+            return back()->with('error', 'El documento se podrá descargar cuando esté marcado como completado.');
+        }
+
         abort_unless($document->file_path && $oo->disk()->exists($document->file_path), 404);
 
-        Audit::log('document.downloaded', "Descargó el documento «{$document->title}»", $document);
+        AuditLogger::log('document.downloaded', "Descargó el documento «{$document->title}»", $document);
 
         return $oo->disk()->download($document->file_path, (Str::slug($document->title) ?: 'documento').'.docx');
+    }
+
+    /** Eliminar: el dueño mientras esté en borrador; el admin siempre. */
+    public function destroy(Document $document): RedirectResponse
+    {
+        Gate::authorize('delete', $document);
+
+        $title = $document->title;
+        $document->delete(); // soft delete: el archivo y el historial se conservan
+
+        return back()->with('status', "El documento «{$title}» fue eliminado.");
+    }
+
+    /**
+     * La copia del documento queda con Arial como fuente predeterminada (ver DocxFonts).
+     * Si algo falla, el documento se crea igual con la fuente de la plantilla.
+     */
+    private function useArialByDefault(OnlyOfficeService $oo, string $path): void
+    {
+        $tmp = tempnam(sys_get_temp_dir(), 'docx_');
+
+        try {
+            file_put_contents($tmp, $oo->disk()->get($path));
+
+            // Solo se reemplaza el archivo si el resultado sigue siendo un .docx válido.
+            if (DocxFonts::useArial($tmp) && DocxValidator::isValid($tmp)) {
+                $stream = fopen($tmp, 'rb');
+                $oo->disk()->put($path, $stream);
+
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        } finally {
+            @unlink($tmp);
+        }
     }
 }

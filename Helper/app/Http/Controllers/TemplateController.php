@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Admin\TemplateRequest;
 use App\Models\Area;
 use App\Models\Template;
-use App\Support\Audit;
+use App\Services\AuditLogger;
 use App\Support\OnlyOfficeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,8 +15,10 @@ use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Gestión de plantillas .docx.
- * Moderador: las de su área. Administrador: todas.
+ * Plantillas .docx.
+ *  - Usuario:       las ve y las usa ("Usar plantilla") para crear documentos.
+ *  - Moderador:     además sube y administra las de su área.
+ *  - Administrador: controla las de todas las áreas.
  */
 class TemplateController extends Controller
 {
@@ -25,24 +27,42 @@ class TemplateController extends Controller
         Gate::authorize('viewAny', Template::class);
 
         $user = $request->user();
+        $canManage = $user->hasRole('admin', 'mod');
+        $search = trim((string) $request->input('q'));
+
+        $base = Template::query()
+            ->visibleTo($user)
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($w) use ($search) {
+                    $w->where('name', 'like', "%{$search}%")->orWhere('description', 'like', "%{$search}%");
+                });
+            })
+            ->when($user->isAdmin() && $request->filled('area'), function ($q) use ($request) {
+                $request->input('area') === 'general'
+                    ? $q->whereNull('area_id')
+                    : $q->where('area_id', $request->integer('area'));
+            });
+
+        $templates = (clone $base)
+            ->with(['area', 'creator'])
+            ->withCount('documents')
+            ->when($canManage && in_array($request->input('status'), [Template::ACTIVE, Template::INACTIVE], true), fn ($q) => $q->where('status', $request->input('status')))
+            ->orderBy('name')
+            ->paginate(12)
+            ->withQueryString();
+
+        $counts = (clone $base)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
 
         return view('templates.index', [
-            'templates' => Template::query()
-                ->with(['area', 'creator'])
-                ->withCount('documents')
-                ->when(! $user->isAdmin(), fn ($q) => $q->where('area_id', $user->area_id ?? 0))
-                ->latest()
-                ->paginate(15),
-        ]);
-    }
-
-    public function create(): View
-    {
-        Gate::authorize('create', Template::class);
-
-        return view('templates.create', [
-            'template' => new Template(['status' => Template::ACTIVE]),
-            'areas' => Area::active()->orderBy('name')->get(),
+            'templates' => $templates,
+            'canManage' => $canManage,
+            'counts' => [
+                'active' => (int) ($counts[Template::ACTIVE] ?? 0),
+                'inactive' => (int) ($counts[Template::INACTIVE] ?? 0),
+            ],
+            // Áreas donde se puede subir una plantilla / crear un documento
+            'formAreas' => $user->isAdmin() ? Area::active()->orderBy('name')->get() : collect(),
+            'newTemplate' => new Template(['status' => Template::ACTIVE]),
         ]);
     }
 
@@ -73,7 +93,7 @@ class TemplateController extends Controller
         return redirect()->route('templates.index')->with('status', 'Plantilla cargada correctamente.');
     }
 
-    public function edit(Request $request, Template $template): View
+    public function edit(Template $template): View
     {
         Gate::authorize('manage', $template);
 
@@ -149,7 +169,7 @@ class TemplateController extends Controller
 
         abort_unless($oo->disk()->exists($template->file_path), 404, 'El archivo de la plantilla no existe en el servidor.');
 
-        Audit::log('template.downloaded', "Descargó la plantilla «{$template->name}»", $template);
+        AuditLogger::log('template.downloaded', "Descargó la plantilla «{$template->name}»", $template);
 
         return $oo->disk()->download($template->file_path, (Str::slug($template->name) ?: 'plantilla').'.docx');
     }

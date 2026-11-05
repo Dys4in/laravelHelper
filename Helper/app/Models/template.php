@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\Auditable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Template extends Model
 {
-    use Auditable, SoftDeletes;
+    use SoftDeletes;
 
     public const ACTIVE = 'active';
     public const INACTIVE = 'inactive';
@@ -46,7 +45,7 @@ class Template extends Model
         return $query->where('status', self::ACTIVE);
     }
 
-    /** Plantillas que un usuario puede usar: las de su área y las generales (sin área). */
+    /** Plantillas que un usuario puede usar al crear un documento: activas, de su área o generales. */
     public function scopeAvailableFor(Builder $query, User $user): Builder
     {
         if ($user->isAdmin()) {
@@ -58,8 +57,27 @@ class Template extends Model
         });
     }
 
-    public function auditType(): string
+    /**
+     * Plantillas que el usuario ve en la pantalla "Plantillas".
+     *  - Admin: todas.
+     *  - Moderador: las de su área (activas o no, para administrarlas) y las generales activas.
+     *  - Usuario: solo las activas de su área y las generales.
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        return 'template';
+        if ($user->isAdmin()) {
+            return $query;
+        }
+
+        if ($user->hasRole('mod')) {
+            return $query->where(function (Builder $q) use ($user) {
+                $q->where('area_id', $user->area_id ?? 0)
+                    ->orWhere(fn (Builder $g) => $g->whereNull('area_id')->where('status', self::ACTIVE));
+            });
+        }
+
+        return $query->where('status', self::ACTIVE)->where(function (Builder $q) use ($user) {
+            $q->whereNull('area_id')->orWhere('area_id', $user->area_id ?? 0);
+        });
     }
 }

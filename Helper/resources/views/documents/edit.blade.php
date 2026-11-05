@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ $document->title }} · Editor · HELPER Docs Maker</title>
+  <title>{{ config('app.HELPER', 'HELPER') }} | {{ $document->title }}</title>
+  <link rel="icon" type="image/png" href="{{ asset('backend/assets/images/favicon/faviconHelper.png') }}">
   @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -18,11 +19,13 @@
         </a>
         <div class="min-w-0 leading-tight">
           <p class="truncate text-sm font-semibold text-gray-900">{{ $document->title }}</p>
-          <p class="text-xs text-gray-500">{{ $document->code }}</p>
+          <p class="truncate text-xs text-gray-500">{{ $document->code }} · Creado por <span class="font-medium text-gray-700">{{ $document->user?->name ?? '—' }}</span></p>
         </div>
       </div>
-      @if ($canEdit)
+      @if ($mode === 'edit')
         <p class="hidden text-xs text-gray-500 md:block">Ctrl+S guarda al instante. Al cerrar el editor, los cambios se guardan solos en unos segundos.</p>
+      @elseif ($mode === 'review')
+        <p class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-800">Modo revisión · tus cambios quedan como sugerencias para {{ $document->user?->name ?? 'su creador' }}</p>
       @else
         <p class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">Solo lectura · documento completado</p>
       @endif

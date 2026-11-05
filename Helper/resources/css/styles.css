@@ -119,4 +119,152 @@
   .hp-empty {
     @apply col-span-full rounded-xl border border-dashed border-gray-200 bg-white p-12 text-center text-gray-600;
   }
+
+  /* =====================================================================
+     Controles de formulario (inputs, listas desplegables, filtros)
+     ===================================================================== */
+  .hp-label { @apply mb-1 block text-[13px] font-semibold text-gray-700; }
+  .hp-input,
+  .hp-select,
+  .hp-textarea {
+    @apply block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-900 shadow-none
+           transition placeholder:text-gray-400 hover:border-gray-300
+           focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20;
+  }
+  .hp-select { @apply cursor-pointer pr-9; }
+  .hp-input[aria-invalid="true"],
+  .hp-select[aria-invalid="true"] { @apply border-red-400 focus:border-red-500 focus:ring-red-200; }
+  .hp-file {
+    @apply block w-full cursor-pointer rounded-lg border border-gray-200 bg-white text-[13px] text-gray-600
+           transition file:mr-4 file:cursor-pointer file:border-0 file:bg-brand file:px-4 file:py-2.5
+           file:text-[13px] file:font-semibold file:text-white hover:border-gray-300 hover:file:brightness-110;
+  }
+  .hp-help { @apply mt-1 text-xs text-gray-500; }
+  .hp-error { @apply mt-1 text-xs font-medium text-red-600; }
+  .hp-static { @apply rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-[13px] text-gray-700; }
+
+  /* Barra de herramientas: buscador + filtros + acción principal */
+  .hp-toolbar { @apply flex flex-wrap items-center gap-3; }
+  .hp-filterbar { @apply flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4; }
+  .hp-filter { @apply flex min-w-[150px] flex-1 flex-col; }
+  .hp-filter-label { @apply mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400; }
+  /* El buscador del topbar se oculta en móvil; en contenido debe verse siempre */
+  .hp-search.hp-search--block { @apply flex w-full min-w-[220px] flex-1 sm:max-w-md; }
+
+  /* Botones */
+  .hp-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-gray-200 bg-white
+           px-4 py-2.5 text-sm font-semibold text-gray-700 no-underline transition hover:bg-gray-50;
+  }
+  .hp-btn-sm {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-2.5 py-1.5
+           text-xs font-medium text-gray-600 no-underline transition hover:bg-gray-50 hover:text-gray-900;
+  }
+  .hp-btn-sm:disabled { @apply cursor-not-allowed opacity-50 hover:bg-white hover:text-gray-600; }
+  .hp-btn-sm--ok { @apply border-green-300 text-green-700 hover:bg-green-50 hover:text-green-800; }
+  .hp-btn-sm--warn { @apply border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800; }
+  .hp-btn-sm--danger { @apply border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800; }
+  .hp-btn-outline:disabled { @apply cursor-not-allowed opacity-50 hover:border-gray-200 hover:bg-transparent hover:text-gray-600; }
+  button.hp-btn-outline { @apply cursor-pointer; }
+
+  /* Contadores que son enlaces (filtros del lado del servidor) */
+  a.hp-stat { @apply no-underline; }
+  .hp-stat[aria-current="true"] { @apply border-brand bg-brand-soft; }
+  .hp-stat[aria-current="true"] .hp-stat-label,
+  .hp-stat[aria-current="true"] .hp-stat-value { @apply text-brand; }
+
+  /* =====================================================================
+     Tarjetas unificadas (documentos y plantillas)
+     ===================================================================== */
+  .hp-card { @apply h-full transition hover:border-gray-300 hover:shadow-sm; container-type: inline-size; }
+  .hp-card .hp-card-body { @apply flex-1; }
+  .hp-card-icon { @apply flex h-8 w-8 items-center justify-center rounded-lg bg-brand-soft text-lg text-brand; }
+  .hp-card-title { @apply truncate text-[15px] font-bold leading-snug text-gray-900; }
+  .hp-card-text { @apply line-clamp-2 min-h-[2.5rem] text-[13px] text-gray-600; }
+  .hp-card-meta { @apply mt-1 flex flex-col gap-1 text-xs text-gray-500; }
+  .hp-card-meta li { @apply flex min-w-0 items-center gap-1.5; }
+  .hp-card-meta li > span { @apply min-w-0 truncate; }
+  .hp-card-meta i { @apply text-gray-400; }
+  .hp-card-foot {
+    @apply mt-auto grid gap-2 border-t border-gray-100 pt-3;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hp-card-foot > * { @apply min-w-0; }
+  .hp-card-foot .hp-btn-sm { @apply w-full justify-center; }
+  .hp-card-foot > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+  @container (min-width: 330px) {
+    .hp-card-foot { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  .hp-badge--active { @apply bg-success-bg text-success-text; }
+  .hp-badge--inactive { @apply bg-gray-200 text-gray-600; }
+  .hp-badge--tpl { @apply bg-brand-soft text-brand; }
+
+  /* =====================================================================
+     Ventanas modales (<dialog>)
+     ===================================================================== */
+  .hp-modal {
+    @apply m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto rounded-2xl border-0 bg-white p-0
+           text-gray-900 shadow-2xl backdrop:bg-gray-900/50 backdrop:backdrop-blur-[2px];
+  }
+  .hp-modal-head { @apply flex items-start gap-3 border-b border-gray-100 px-6 py-5; }
+  .hp-modal-icon { @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-xl text-brand; }
+  .hp-modal-title { @apply text-base font-bold leading-tight text-gray-900; }
+  .hp-modal-sub { @apply mt-0.5 text-[13px] text-gray-600; }
+  .hp-modal-close {
+    @apply -mr-2 -mt-1 ml-auto flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0
+           bg-transparent text-gray-400 transition hover:bg-gray-100 hover:text-gray-700;
+  }
+  .hp-modal-body { @apply flex flex-col gap-4 px-6 py-5; }
+  .hp-modal-grid { @apply grid gap-4 sm:grid-cols-2; }
+  .hp-modal-foot { @apply flex flex-col-reverse gap-3 border-t border-gray-100 bg-gray-50 px-6 py-4 sm:flex-row sm:justify-end; }
+  .hp-modal-picked { @apply flex items-start gap-3 rounded-xl border border-brand/20 bg-brand-soft/60 p-3; }
+
+  /* =====================================================================
+     Dashboard
+     ===================================================================== */
+  .hp-tiles { @apply grid grid-cols-2 gap-4 lg:grid-cols-4; }
+  .hp-tile { @apply flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-4; }
+  .hp-tile-icon { @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl; }
+  .hp-tile-label { @apply text-[11px] font-semibold uppercase tracking-wide text-gray-500; }
+  .hp-tile-value { @apply text-2xl font-extrabold leading-tight text-gray-900; }
+  .hp-tile-hint { @apply mt-0.5 text-xs text-gray-500; }
+
+  .hp-dash-grid { @apply grid gap-6 lg:grid-cols-3; }
+  .hp-panel { @apply min-w-0 rounded-xl border border-gray-200 bg-white p-5; }
+  .hp-panel-head { @apply mb-4 flex items-center justify-between gap-3; }
+  .hp-panel-title { @apply text-[15px] font-bold text-gray-900; }
+  .hp-panel-link { @apply text-xs font-semibold text-brand no-underline hover:underline; }
+  .hp-rows { @apply flex flex-col; }
+  .hp-rows > * + * { @apply border-t border-gray-100; }
+  .hp-row { @apply flex items-center gap-3 py-3 first:pt-0 last:pb-0; }
+  .hp-row-main { @apply min-w-0 flex-1; }
+  .hp-row-title { @apply truncate text-sm font-semibold text-gray-900; }
+  .hp-row-sub { @apply truncate text-xs text-gray-500; }
+
+  .hp-bar { @apply flex h-2.5 w-full overflow-hidden rounded-full bg-gray-200; }
+  .hp-bar-seg--completed { @apply h-full bg-brand; }
+  .hp-bar-seg--draft { @apply h-full bg-gray-300; }
+  .hp-legend { @apply mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-gray-600; }
+  .hp-dot { @apply mr-1.5 inline-block h-2 w-2 rounded-full; }
+  .hp-dot--completed { @apply bg-brand; }
+  .hp-dot--draft { @apply bg-gray-300; }
+
+  .hp-chart { @apply flex h-36 items-end gap-3; }
+  .hp-chart-col { @apply flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1; }
+  .hp-chart-bar { @apply min-h-[3px] w-full max-w-[40px] rounded-t-md bg-brand/80 transition-[height]; }
+  .hp-chart-bar--zero { @apply bg-gray-200; }
+  .hp-chart-value { @apply text-[11px] font-semibold text-gray-700; }
+  .hp-chart-label { @apply text-[11px] text-gray-500; }
+}
+
+/* Animación de entrada de las ventanas modales (fuera de la capa para que Tailwind no la elimine) */
+@keyframes hp-modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.hp-modal[open] { animation: hp-modal-in 0.18s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .hp-modal[open] { animation: none; }
 }

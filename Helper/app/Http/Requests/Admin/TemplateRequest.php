@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 
-/** Crear y editar plantillas. El acceso ya lo restringe role:admin. */
+/** Crear y editar plantillas (admin y moderador). El moderador siempre sube a su propia área; el admin elige el área. */
 class TemplateRequest extends FormRequest
 {
     public function authorize(): bool
@@ -22,8 +22,12 @@ class TemplateRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string', 'max:255'],
-            // vacío = disponible para todas las áreas
-            'area_id' => ['nullable', Rule::exists('areas', 'id')->whereNull('deleted_at')],
+            // El admin debe asignar la plantilla a un área; el moderador siempre usa la suya (se ignora lo que envíe).
+            'area_id' => [
+                Rule::requiredIf(fn () => $this->user()?->isAdmin() === true),
+                'nullable',
+                Rule::exists('areas', 'id')->whereNull('deleted_at'),
+            ],
             'status' => ['nullable', Rule::in(['active', 'inactive'])],
             'file' => [
                 $isUpdate ? 'nullable' : 'required',
@@ -45,6 +49,7 @@ class TemplateRequest extends FormRequest
 
         return [
             'name.required' => 'El nombre de la plantilla es obligatorio.',
+            'area_id.required' => 'Selecciona el área a la que se asigna la plantilla.',
             'area_id.exists' => 'El área seleccionada no existe.',
             'file.required' => 'Selecciona el archivo .docx de la plantilla.',
             'file.extensions' => 'Solo se permiten archivos .docx.',

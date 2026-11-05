@@ -24,11 +24,11 @@
                 </div>
 
                 <h1 class="login-title">
-                    Welcome
+                    Bienvenido 
                 </h1>
 
                 <p class="login-subtitle">
-                    Please enter your details to sign in
+                    Por favor, ingresa tus datos para iniciar sesión
                 </p>
 
             </header>
@@ -47,7 +47,7 @@
 
                     <x-input-label
                         for="email"
-                        :value="__('Email Address')"
+                        :value="__('Correo electrónico')"
                         class="login-label"
                     />
 
@@ -57,9 +57,9 @@
                             id="email"
                             type="email"
                             name="email"
-                            :value="old('email')"
+                            :value="old('email', $rememberedEmail ?? '')"
                             required
-                            autofocus
+                            :autofocus="empty($rememberedEmail)"
                             autocomplete="username"
                             placeholder="dsarah.villarica@fareva.com"
                             :class="$errors->has('email') ? 'login-input login-input--error' : 'login-input'"
@@ -67,51 +67,50 @@
 
                     </div>
 
-
                 </div>
 
 
                 {{-- Password --}}
                 <div class="login-field">
 
-    <x-input-label
-        for="password"
-        :value="__('Password')"
-        class="login-label"
-    />
+                    <x-input-label
+                        for="password"
+                        :value="__('Contraseña')"
+                        class="login-label"
+                    />
 
-    <div class="login-input-wrapper">
+                    <div class="login-input-wrapper login-input-wrapper--password">
 
-        <x-text-input
-            id="password"
-            type="password"
-            name="password"
-            required
-            autocomplete="off"
-            placeholder="••••••"
-            :class="$errors->has('password') ? 'login-input login-input--error' : 'login-input'"
-        />
+                        <x-text-input
+                            id="password"
+                            type="password"
+                            name="password"
+                            required
+                            autocomplete="off"
+                            placeholder="••••••"
+                            :autofocus="! empty($rememberedEmail)"
+                            :class="$errors->has('password') ? 'login-input login-input--error' : 'login-input'"
+                        />
 
-        <button
-            type="button"
-            id="passwordToggle"
-            class="password-toggle"
-            aria-label="Mostrar contraseña"
-        >
-            <img
-                id="passwordIcon"
-                src="{{ asset('backend/assets/images/avatar/user-lock.png') }}"
-                alt="Mostrar contraseña"
-            >
-        </button>
+                        <button
+                            type="button"
+                            id="passwordToggle"
+                            class="password-toggle"
+                            aria-label="Mostrar contraseña"
+                        >
+                            <img
+                                id="passwordIcon"
+                                src="{{ asset('backend/assets/images/avatar/user-lock.png') }}"
+                                alt="Mostrar contraseña"
+                            >
+                        </button>
 
-    </div>
+                    </div>
+
+                </div>
 
 
-</div>
-
-
-                {{-- Remember / Forgot --}}
+                {{-- Remember --}}
                 <div class="login-options">
 
                     <label
@@ -123,26 +122,16 @@
                             id="remember_me"
                             type="checkbox"
                             name="remember"
+                            value="1"
                             class="remember-checkbox"
+                            @checked(old('remember', ! empty($rememberedEmail)))
                         >
 
                         <span>
-                            Remember
+                            Recordar mi correo
                         </span>
 
                     </label>
-
-
-                    @if (Route::has('password.request'))
-
-                        <a
-                            href="{{ route('password.request') }}"
-                            class="forgot-link"
-                        >
-                            Forgot password?
-                        </a>
-
-                    @endif
 
                 </div>
 
@@ -161,7 +150,7 @@
 
             {{-- Acceso solo por solicitud --}}
             <div class="register-link">
-                <span>¿Necesitas acceso? Solicítalo al administrador del sistema.</span>
+                <span>Solicítudes al administrador del sistema.</span>
             </div>
         </section>
 

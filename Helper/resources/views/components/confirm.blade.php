@@ -84,7 +84,7 @@
       cancel.type = 'button';
       var ok = el('button', 'rounded-lg px-4 py-2 text-sm font-semibold text-white transition focus:outline-none focus-visible:ring-2 ' + v.btn, opts.confirmText || 'Confirmar');
       ok.type = 'button';
-      foot.appendChild(cancel);
+      if (!opts.alert) foot.appendChild(cancel);
       foot.appendChild(ok);
       panel.appendChild(foot);
 
@@ -95,7 +95,7 @@
         overlay.classList.remove('opacity-0');
         panel.classList.remove('scale-95', 'opacity-0');
       });
-      cancel.focus(); // foco en "Cancelar": la opción segura
+      (opts.alert ? ok : cancel).focus(); // en alertas solo hay un botón
 
       var done = false;
       function finish(result) {
@@ -115,6 +115,7 @@
       function onKey(e) {
         if (e.key === 'Escape') { e.preventDefault(); finish(false); return; }
         if (e.key === 'Tab') {            // el foco se queda dentro de la ventana
+          if (opts.alert) { e.preventDefault(); ok.focus(); return; }
           if (e.shiftKey && document.activeElement === cancel) { e.preventDefault(); ok.focus(); }
           else if (!e.shiftKey && document.activeElement === ok) { e.preventDefault(); cancel.focus(); }
           else if (!panel.contains(document.activeElement)) { e.preventDefault(); cancel.focus(); }
@@ -143,7 +144,10 @@
       cancelText: form.getAttribute('data-confirm-cancel') || undefined,
       variant: form.getAttribute('data-confirm-variant') || undefined
     }).then(function (ok) {
-      if (ok) HTMLFormElement.prototype.submit.call(form); // submit() no vuelve a disparar este evento
+      if (ok) {
+        if (window.HelperClickGuard) window.HelperClickGuard.lockForm(form);
+        HTMLFormElement.prototype.submit.call(form); // submit() no vuelve a disparar este evento
+      }
     });
   }, true);
 })();

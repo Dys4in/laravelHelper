@@ -2,18 +2,14 @@
 
 namespace App\Http\Controllers\Backend;
 
-use App\Http\Controllers\Concerns\BuildsDocumentBoard;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
 
 class UserController extends Controller
 {
-    use BuildsDocumentBoard;
-
-    public function dashboard()
+    /** El inicio de este rol es "Mis documentos". */
+    public function dashboard(): RedirectResponse
     {
-        return $this->documentBoard(
-            'Mis documentos',
-            'Crea documentos desde las plantillas de tu área y edítalos.'
-        );
+        return redirect()->route('documents.index');
     }
 }

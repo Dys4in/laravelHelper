@@ -34,8 +34,11 @@ return [
     /* Tamaño máximo de un .docx subido, en KB (20480 = 20 MB). */
     'max_upload_kb' => (int) env('ONLYOFFICE_MAX_UPLOAD_KB', 20480),
 
-    /* Vigencia del enlace firmado con el que el Document Server descarga el archivo. */
-    'file_url_ttl_hours' => 12,
+    /*
+    | Vigencia (en minutos) del enlace firmado con el que el Document Server descarga el archivo.
+    | Va dentro de la configuración del editor, así que se mantiene corto: OnlyOffice lo usa al abrir el documento.
+    */
+    'file_url_ttl_minutes' => (int) env('ONLYOFFICE_FILE_URL_TTL_MINUTES', 10),
 
     'lang' => env('ONLYOFFICE_LANG', 'es'),
 ];

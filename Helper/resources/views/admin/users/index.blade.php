@@ -4,14 +4,14 @@
       <h2 class="mb-1 text-xl font-bold text-gray-900">Usuarios</h2>
       <p class="text-sm text-gray-600">Solo el administrador puede crear cuentas y asignar su rol y área.</p>
     </div>
-    <a href="{{ route('admin.users.create') }}" class="hp-btn-primary">
+    <button type="button" data-modal-open="create-user" class="hp-btn-primary">
       <i class="bi bi-person-plus" aria-hidden="true"></i><span>Nuevo usuario</span>
-    </a>
+    </button>
   </section>
 
   {{-- Filtros --}}
   <form method="GET" action="{{ route('admin.users.index') }}" class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
-    <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar por nombre, correo o usuario"
+    <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar por nombre, abreviatura, correo o usuario"
            class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
 
     <select name="area" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
@@ -51,7 +51,7 @@
           <tr>
             <td class="px-4 py-3">
               <p class="font-semibold text-gray-900">{{ $u->name }}</p>
-              <p class="text-xs text-gray-500">{{ $u->email }}</p>
+              <p class="text-xs text-gray-500">{{ $u->short_name }} · {{ $u->email }}</p>
             </td>
             <td class="px-4 py-3">
               <span class="inline-flex rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">{{ $u->role->label() }}</span>
@@ -103,4 +103,18 @@
   </div>
 
   {{ $users->links() }}
+
+  {{-- Ventana: Nuevo usuario --}}
+  <x-app-modal id="create-user" title="Nuevo usuario" description="Solo el administrador crea cuentas. Elige su rol y su área." size="xl">
+    <form method="POST" action="{{ route('admin.users.store') }}" class="space-y-6" autocomplete="off">
+      @csrf
+      <input type="hidden" name="_modal" value="create-user">
+      @include('admin.users._form', ['user' => $newUser, 'areas' => $formAreas, 'roles' => $roles])
+
+      <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
+        <button type="button" data-modal-close class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancelar</button>
+        <button type="submit" class="hp-btn-primary">Crear usuario</button>
+      </div>
+    </form>
+  </x-app-modal>
 </x-admin-layout>

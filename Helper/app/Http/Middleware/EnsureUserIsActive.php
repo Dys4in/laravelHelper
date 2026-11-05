@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Support\Audit;
+use App\Services\AuditLogger;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +19,7 @@ class EnsureUserIsActive
         $user = $request->user();
 
         if ($user && ($reason = $user->accessDeniedReason())) {
-            Audit::log('auth.session_revoked', 'Sesión cerrada por el sistema: '.$reason, actor: $user);
+            AuditLogger::log('auth.session_revoked', "Sesión cerrada por el sistema ({$user->email}): {$reason}", $user, actor: $user);
 
             Auth::guard('web')->logout();
 

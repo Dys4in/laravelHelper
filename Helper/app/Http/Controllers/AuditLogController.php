@@ -5,25 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\User;
-use App\Support\Audit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Audit trail: el admin ve todos los movimientos; el moderador, los de su área.
+ * Audit trail: todos los usuarios ven todos los movimientos.
  * Solo lectura: los registros no se pueden editar ni eliminar.
  */
 class AuditLogController extends Controller
 {
     public function index(Request $request): View
     {
-        $user = $request->user();
         $filters = $this->filters($request);
 
         $logs = AuditLog::query()
             ->with('area')
-            ->visibleTo($user)
             ->filtered($filters)
             ->latest('id')
             ->paginate(25)
@@ -32,12 +29,11 @@ class AuditLogController extends Controller
         return view('audit.index', [
             'logs' => $logs,
             'filters' => $filters,
-            'modules' => Audit::MODULES,
+            'modules' => AuditLog::MODULES,
             'actors' => User::query()
-                ->when(! $user->isAdmin(), fn ($q) => $q->where('area_id', $user->area_id ?? 0))
                 ->orderBy('name')
                 ->get(['id', 'name']),
-            'areas' => $user->isAdmin() ? Area::withTrashed()->orderBy('name')->get() : collect(),
+            'areas' => Area::withTrashed()->orderBy('name')->get(),
             'lastId' => (int) ($logs->first()?->id ?? 0),
             'firstPage' => $logs->currentPage() === 1,
         ]);
@@ -53,7 +49,6 @@ class AuditLogController extends Controller
 
         $logs = AuditLog::query()
             ->with('area')
-            ->visibleTo($request->user())
             ->filtered($this->filters($request))
             ->where('id', '>', $after)
             ->orderBy('id')
@@ -76,7 +71,7 @@ class AuditLogController extends Controller
     {
         $data = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
-            'module' => ['nullable', 'in:'.implode(',', array_keys(Audit::MODULES))],
+            'module' => ['nullable', 'in:'.implode(',', array_keys(AuditLog::MODULES))],
             'user' => ['nullable', 'integer'],
             'area' => ['nullable', 'integer'],
             'from' => ['nullable', 'date'],

@@ -32,7 +32,7 @@
     <a class="hp-nav-item {{ request()->routeIs('admin.areas.*') ? 'is-active' : '' }}" href="{{ $link('admin.areas.index') }}">
       <i class="bi bi-diagram-3" aria-hidden="true"></i><span>Áreas</span>
     </a>
-    <a class="hp-nav-item {{ request()->routeIs('admin.audit.*') ? 'is-active' : '' }}" href="{{ $link('admin.audit.index') }}">
+    <a class="hp-nav-item {{ request()->routeIs('audit.*') ? 'is-active' : '' }}" href="{{ $link('audit.index') }}">
       <i class="bi bi-activity" aria-hidden="true"></i><span>Auditoría</span>
     </a>
   @endif

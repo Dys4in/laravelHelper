@@ -1,14 +1,8 @@
-@php $isAdmin = auth()->user()->isAdmin(); @endphp
-<x-panel-layout :title="$isAdmin ? 'Auditoría' : 'Actividad del área'">
+<x-panel-layout title="Audit trail">
   <section class="flex flex-wrap items-center justify-between gap-4">
     <div>
-      <h2 class="mb-1 text-xl font-bold text-gray-900">{{ $isAdmin ? 'Audit trail' : 'Actividad del área' }}</h2>
       <p class="text-sm text-gray-600">
-        @if ($isAdmin)
-          Registro de todos los movimientos de la aplicación. Es de solo lectura: nadie puede editar ni borrar estos registros desde la app.
-        @else
-          Movimientos de tu área ({{ auth()->user()->area?->name }}). Es de solo lectura.
-        @endif
+        Registro de todos los movimientos de la aplicación. Es de solo lectura: nadie puede editar ni borrar estos registros.
       </p>
     </div>
 
@@ -22,8 +16,8 @@
   </section>
 
   {{-- Filtros --}}
-  <form method="GET" action="{{ route('audit.index') }}" class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
-    <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Buscar en el detalle, objeto, usuario o IP"
+  <form method="GET" action="{{ route('audit.index') }}" data-autosubmit class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
+    <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Buscar por el usuario, detalle o area..."
            class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand sm:col-span-2">
 
     <select name="module" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
@@ -40,14 +34,12 @@
       @endforeach
     </select>
 
-    @if ($isAdmin)
-      <select name="area" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
-        <option value="">Todas las áreas</option>
-        @foreach ($areas as $area)
-          <option value="{{ $area->id }}" @selected((string) $filters['area'] === (string) $area->id)>{{ $area->name }}</option>
-        @endforeach
-      </select>
-    @endif
+    <select name="area" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
+      <option value="">Todas las áreas</option>
+      @foreach ($areas as $area)
+        <option value="{{ $area->id }}" @selected((string) $filters['area'] === (string) $area->id)>{{ $area->name }}</option>
+      @endforeach
+    </select>
 
     <div class="flex items-center gap-2">
       <label for="from" class="text-xs font-medium text-gray-500">Desde</label>
@@ -59,8 +51,8 @@
     </div>
 
     <div class="flex gap-2 sm:col-span-2 lg:col-span-1">
-      <button type="submit" class="flex-1 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">Filtrar</button>
-      <a href="{{ route('audit.index') }}" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Limpiar</a>
+      <button type="submit" class="hp-btn-outline flex-1">Filtrar</button>
+      <a href="{{ route('audit.index') }}" class="hp-btn-outline flex-1">Limpiar</a>
     </div>
   </form>
 
@@ -80,7 +72,6 @@
           <th class="px-4 py-3">Evento</th>
           <th class="px-4 py-3">Detalle</th>
           <th class="px-4 py-3">Área</th>
-          <th class="px-4 py-3">IP</th>
         </tr>
       </thead>
       <tbody id="audit-body" class="divide-y divide-gray-100"
@@ -91,7 +82,7 @@
         @forelse ($logs as $log)
           @include('audit._row', ['log' => $log])
         @empty
-          <tr id="audit-empty"><td colspan="6" class="px-4 py-12 text-center text-gray-500">No hay movimientos que coincidan.</td></tr>
+          <tr id="audit-empty"><td colspan="5" class="px-4 py-12 text-center text-gray-500">No hay movimientos que coincidan.</td></tr>
         @endforelse
       </tbody>
     </table>

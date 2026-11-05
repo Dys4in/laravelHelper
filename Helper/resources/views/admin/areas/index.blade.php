@@ -1,24 +1,13 @@
 <x-admin-layout title="Áreas">
-  <section>
-    <h2 class="mb-1 text-xl font-bold text-gray-900">Áreas</h2>
-    <p class="text-sm text-gray-600">Cada usuario pertenece a un área. Suspender un área impide que sus usuarios inicien sesión.</p>
+  <section class="hp-overview">
+    <div>
+      <h2 class="hp-overview-title">Áreas</h2>
+      <p class="hp-overview-sub">Cada usuario pertenece a un área. Suspender un área impide que sus usuarios inicien sesión.</p>
+    </div>
+    <button type="button" class="hp-btn-primary" data-modal-open="area-create">
+      <i class="bi bi-plus-lg" aria-hidden="true"></i> Nueva área
+    </button>
   </section>
-
-  {{-- Crear --}}
-  <form method="POST" action="{{ route('admin.areas.store') }}" class="grid gap-4 rounded-xl border border-gray-200 bg-white p-4 md:grid-cols-[1fr_1.5fr_auto] md:items-end">
-    @csrf
-    <div>
-      <label for="name" class="block text-sm font-medium text-gray-700">Nombre del área *</label>
-      <input id="name" name="name" type="text" value="{{ old('name') }}" required maxlength="100"
-             class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand @error('name') !border-red-400 @enderror">
-    </div>
-    <div>
-      <label for="description" class="block text-sm font-medium text-gray-700">Descripción</label>
-      <input id="description" name="description" type="text" value="{{ old('description') }}" maxlength="255"
-             class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand @error('description') !border-red-400 @enderror">
-    </div>
-    <button type="submit" class="hp-btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i><span>Crear área</span></button>
-  </form>
 
   {{-- Listado --}}
   <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white">
@@ -82,4 +71,32 @@
       </tbody>
     </table>
   </div>
+
+  {{-- ============ Ventana: Nueva área ============ --}}
+  @php $areaOpen = old('_modal') === 'area-create'; @endphp
+  <x-hp-modal id="area-create" title="Nueva área" subtitle="Las áreas agrupan usuarios, plantillas y documentos."
+              icon="bi-diagram-3" :open="$areaOpen">
+    <form method="POST" action="{{ route('admin.areas.store') }}">
+      @csrf
+      <input type="hidden" name="_modal" value="area-create">
+
+      <div class="hp-modal-body">
+        <div>
+          <label for="area-create-name" class="hp-label">Nombre del área *</label>
+          <input id="area-create-name" name="name" type="text" value="{{ $areaOpen ? old('name') : '' }}" required maxlength="100" class="hp-input" @if ($areaOpen && $errors->has('name')) aria-invalid="true" @endif>
+          @if ($areaOpen && $errors->has('name'))<p class="hp-error">{{ $errors->first('name') }}</p>@endif
+        </div>
+        <div>
+          <label for="area-create-description" class="hp-label">Descripción</label>
+          <input id="area-create-description" name="description" type="text" value="{{ $areaOpen ? old('description') : '' }}" maxlength="255" class="hp-input">
+          @if ($areaOpen && $errors->has('description'))<p class="hp-error">{{ $errors->first('description') }}</p>@endif
+        </div>
+      </div>
+
+      <div class="hp-modal-foot">
+        <button type="button" class="hp-btn-ghost" data-modal-close>Cancelar</button>
+        <button type="submit" class="hp-btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> Crear área</button>
+      </div>
+    </form>
+  </x-hp-modal>
 </x-admin-layout>

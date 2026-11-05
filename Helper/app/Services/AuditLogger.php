@@ -42,7 +42,7 @@ class AuditLogger
                 'user_id'         => $actor?->id,
                 'user_name'       => $actor?->name,
                 'user_role'       => $actor?->role?->value,
-                'area_id'         => $actor?->area_id,
+                'area_id'         => self::areaOf($subject) ?? $actor?->area_id,
                 'event'           => $event,
                 'auditable_type'  => $subject ? (self::TYPES[$subject::class][0] ?? class_basename($subject)) : null,
                 'auditable_id'    => $subject?->getKey(),
@@ -56,6 +56,16 @@ class AuditLogger
         } catch (Throwable $e) {
             report($e);
         }
+    }
+
+    /** Área a la que pertenece el movimiento (para poder filtrar por área). */
+    private static function areaOf(?Model $subject): ?int
+    {
+        return match (true) {
+            $subject instanceof Area => (int) $subject->getKey(),
+            $subject instanceof User, $subject instanceof Template, $subject instanceof Document => $subject->area_id ? (int) $subject->area_id : null,
+            default => null,
+        };
     }
 
     /** Nombre legible del tipo de modelo ("Usuario", "Plantilla"...). */

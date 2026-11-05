@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Document;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -44,7 +45,7 @@ class OnlyOfficeService
     {
         $path = URL::temporarySignedRoute(
             'onlyoffice.file',
-            now()->addHours(config('onlyoffice.file_url_ttl_hours')),
+            now()->addMinutes(config('onlyoffice.file_url_ttl_minutes')),
             ['document' => $document->id, 'v' => $document->version],
             absolute: false,
         );
@@ -63,10 +64,13 @@ class OnlyOfficeService
     /**
      * Configuración que recibe DocsAPI.DocEditor en el navegador (ya firmada con JWT).
      *
+     * @param  string  $mode  'edit' = el creador edita · 'review' = control de cambios (moderador/admin) · 'view' = solo lectura
      * @return array<string, mixed>
      */
-    public function editorConfig(Document $document, User $user, bool $canEdit = true): array
+    public function editorConfig(Document $document, User $user, string $mode = 'edit'): array
     {
+        $mode = in_array($mode, ['edit', 'review', 'view'], true) ? $mode : 'view';
+
         $config = [
             'documentType' => 'word',
             'document' => [
@@ -74,16 +78,28 @@ class OnlyOfficeService
                 'key' => $document->doc_key,
                 'title' => $document->title.'.docx',
                 'url' => $this->fileUrl($document),
+                // Se muestra en Archivo → Información del documento.
+                'info' => [
+                    'owner' => $document->user?->name ?? '—',
+                    'uploaded' => $document->created_at?->format('d/m/Y H:i'),
+                ],
                 'permissions' => [
-                    'edit' => $canEdit,
-                    'download' => true,
-                    'print' => true,
-                    'comment' => $canEdit,
-                    'review' => $canEdit,
+                    // Las descargas e impresiones las controla la app (solo documentos completados).
+                    'download' => false,
+                    'print' => false,
+                    // Sin la pestaña "Protección" (cifrar con contraseña, firma) ni el botón de proteger.
+                    'protect' => false,
+                    // edit  = el creador, que además puede aceptar / rechazar los cambios de quien revisa.
+                    // review = solo control de cambios: edit=false + review=true (modo revisión forzado).
+                    // view   = solo lectura.
+                    'edit' => $mode === 'edit',
+                    'review' => $mode !== 'view',
+                    'comment' => $mode !== 'view',
                 ],
             ],
             'editorConfig' => [
-                'mode' => $canEdit ? 'edit' : 'view',
+                // Un documento completado se abre como visor; el modo revisión necesita mode=edit.
+                'mode' => $mode === 'view' ? 'view' : 'edit',
                 'lang' => config('onlyoffice.lang'),
                 'callbackUrl' => $this->callbackUrl($document),
                 'user' => [
@@ -92,7 +108,12 @@ class OnlyOfficeService
                 ],
                 'customization' => [
                     'autosave' => true,
-                    'forcesave' => true,   // Ctrl+S guarda en Laravel sin cerrar el editor
+                    'forcesave' => true,        // Ctrl+S guarda en Laravel sin cerrar el editor
+                    'help' => false,            // sin el apartado "Ayuda"
+                    'suggestFeature' => false,  // sin "Sugerir una función"
+                    // Sin enlace al hacer clic en el logo. OnlyOffice documenta logo.url como opción de la
+                    // edición Developer: en la gratuita puede ignorarse.
+                    'logo' => ['url' => ''],
                 ],
             ],
         ];
@@ -172,11 +193,10 @@ class OnlyOfficeService
         ])->save();
 
         // El callback no tiene sesión: el autor es el último usuario que editó, según OnlyOffice.
-        Audit::log(
+        AuditLogger::log(
             'document.saved',
             "Guardó cambios en el documento «{$document->title}» (versión {$document->version})",
             $document,
-            meta: ['version' => $document->version],
             actor: $userId ? User::find($userId) : null,
         );
     }

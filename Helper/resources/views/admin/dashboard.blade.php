@@ -1,201 +1,149 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard · HELPER Docs Maker</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-  {{-- Solo para los iconos (bi bi-*) --}}
-  <link rel="stylesheet" href="{{ asset('backend/assets/vendors/bootstrap-icons/bootstrap-icons.css') }}">
-
-  @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-
 @php
-  /*
-   * Desde el controlador: return view('dashboard', ['documents' => $documents, 'limit' => 20]);
-   * Cada documento (array u objeto Eloquent) con:
-   *   id      → identificador interno
-   *   code    → nombre/ID visible, ej. "VIL-PLNT-007"  (lo usa el buscador)
-   *   status  → OBLIGATORIO: 'draft' | 'completed'
-   *   edited  → texto "Edited yesterday" (o updated_at->diffForHumans())
-   */
-  $documents = $documents ?? [
-    ['id' => 7,  'code' => 'VIL-PLNT-007', 'status' => 'completed', 'edited' => 'Edited yesterday'],
-    ['id' => 8,  'code' => 'VIL-PLNT-008', 'status' => 'draft',     'edited' => 'Edited 1/08/2026'],
-    ['id' => 9,  'code' => 'VIL-PLNT-009', 'status' => 'draft',     'edited' => 'Edited 28/09/2026'],
-    ['id' => 12, 'code' => 'VIL-PLNT-012', 'status' => 'completed', 'edited' => 'Edited today'],
-    ['id' => 11, 'code' => 'VIL-PLNT-011', 'status' => 'completed', 'edited' => 'Edited 23/08/2026'],
-    ['id' => 10, 'code' => 'VIL-PLNT-010', 'status' => 'draft',     'edited' => 'Edited 28/09/2026'],
-  ];
-  $limit = $limit ?? 20;
-
-  // Enlaces: usa la ruta nombrada si existe; si no, '#'. Ajusta los nombres a tus rutas reales.
-  $link = fn (string $name, array $params = []) => Route::has($name) ? route($name, $params) : '#';
-
-  // Status obligatorio: si llega vacío o inválido se toma como 'draft'
-  $docs = collect($documents)->map(function ($d) {
-      $status = strtolower((string) data_get($d, 'status'));
-      return [
-        'id'     => data_get($d, 'id'),
-        'code'   => data_get($d, 'code'),
-        'status' => in_array($status, ['draft', 'completed'], true) ? $status : 'draft',
-        'edited' => data_get($d, 'edited'),
-      ];
-  });
-
-  $total     = $docs->count();
-  $drafts    = $docs->where('status', 'draft')->count();
-  $completed = $docs->where('status', 'completed')->count();
-  $usedPct   = $limit > 0 ? min(100, round($total / $limit * 100)) : 0;
+  $pct = fn (int $part, int $whole) => $whole > 0 ? round($part / $whole * 100) : 0;
 @endphp
 
-<body class="hp-body">
-  <div class="hp-shell">
+<x-panel-layout title="Dashboard">
+  <section class="hp-overview">
+    <div>
+      <h2 class="hp-overview-title">Dashboard</h2>
+      <p class="hp-overview-sub">Resumen de la actividad de todas las áreas.</p>
+    </div>
+    <a href="{{ route('audit.index') }}" class="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+      <i class="bi bi-shield-check" aria-hidden="true"></i> Ver auditoría completa
+    </a>
+  </section>
 
-    <div class="hp-backdrop" data-sidebar-close></div>
-
-    {{-- ============ SIDEBAR ============ --}}
-    <aside class="hp-sidebar" id="hpSidebar" aria-label="Navegación principal">
-      <a class="hp-brand" href="{{ $link('admin.dashboard') }}" aria-label="HELPER Docs Maker">
-        <img class="hp-brand-logo" src="{{ asset('backend/assets/images/avatar/lt_logo-removebg-preview.png') }}" alt="HELPER">
-        <span class="hp-brand-text">
-          <span class="hp-brand-title">HELPER</span>
-          <span class="hp-brand-sub">Docs maker</span>
+  {{-- Indicadores --}}
+  <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores">
+    @foreach ([
+      ['Documentos', $stats['documents'], 'bi-file-earmark-text', 'bg-brand-soft text-brand', route('supervision.index'), 'Ver todos'],
+      ['Borradores', $stats['drafts'], 'bi-pencil-square', 'bg-gray-100 text-gray-600', route('supervision.index', ['status' => 'draft']), 'Pendientes de completar'],
+      ['Completados', $stats['completed'], 'bi-check2-circle', 'bg-success-bg text-success-text', route('supervision.index', ['status' => 'completed']), 'Listos para descargar'],
+      ['Plantillas activas', $stats['templates'], 'bi-grid', 'bg-brand-soft text-brand', route('templates.index'), 'de '.$stats['templatesTotal'].' en total'],
+    ] as [$label, $value, $ico, $tone, $href, $hint])
+      <a href="{{ $href }}" class="group flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-5 transition hover:border-gray-300">
+        <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl {{ $tone }}"><i class="bi {{ $ico }}" aria-hidden="true"></i></span>
+        <span class="min-w-0">
+          <span class="block text-sm text-gray-500">{{ $label }}</span>
+          <span class="block text-2xl font-bold leading-tight text-gray-900">{{ $value }}</span>
+          <span class="block truncate text-xs text-gray-400">{{ $hint }}</span>
         </span>
       </a>
+    @endforeach
+  </section>
 
-      <nav class="hp-nav">
-        <a class="hp-nav-item {{ request()->routeIs('admin.dashboard', 'documents.*') ? 'is-active' : '' }}" href="{{ $link('documents.index') }}">
-          <i class="bi bi-file-earmark-text" aria-hidden="true"></i><span>Documents</span>
-        </a>
-        <a class="hp-nav-item {{ request()->routeIs('templates.*') ? 'is-active' : '' }}" href="{{ $link('templates.index') }}">
-          <i class="bi bi-grid" aria-hidden="true"></i><span>Templates</span>
-        </a>
-        <a class="hp-nav-item {{ request()->routeIs('admin.users.*') ? 'is-active' : '' }}" href="{{ $link('admin.users.index') }}">
-          <i class="bi bi-people" aria-hidden="true"></i><span>Usuarios</span>
-        </a>
-        <a class="hp-nav-item {{ request()->routeIs('admin.areas.*') ? 'is-active' : '' }}" href="{{ $link('admin.areas.index') }}">
-          <i class="bi bi-diagram-3" aria-hidden="true"></i><span>Áreas</span>
-        </a>
-        <a class="hp-nav-item {{ request()->routeIs('audit.*') ? 'is-active' : '' }}" href="{{ $link('audit.index') }}">
-          <i class="bi bi-shield-check" aria-hidden="true"></i><span>Auditoría</span>
-        </a>
-        <a class="hp-nav-item {{ request()->routeIs('profile.*') ? 'is-active' : '' }}" href="{{ $link('profile.edit') }}">
-          <i class="bi bi-person" aria-hidden="true"></i><span>Profile</span>
-        </a>
-      </nav>
+  <section class="grid gap-4 sm:grid-cols-2">
+    <a href="{{ route('admin.users.index') }}" class="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-5 transition hover:border-gray-300">
+      <span><span class="block text-sm text-gray-500">Usuarios activos</span><span class="text-2xl font-bold text-gray-900">{{ $stats['users'] }}</span> <span class="text-sm text-gray-400">de {{ $stats['usersTotal'] }}</span></span>
+      <i class="bi bi-people text-2xl text-gray-300" aria-hidden="true"></i>
+    </a>
+    <a href="{{ route('admin.areas.index') }}" class="flex items-center justify-between rounded-xl border border-gray-200 bg-white p-5 transition hover:border-gray-300">
+      <span><span class="block text-sm text-gray-500">Áreas activas</span><span class="text-2xl font-bold text-gray-900">{{ $stats['areas'] }}</span> <span class="text-sm text-gray-400">de {{ $stats['areasTotal'] }}</span></span>
+      <i class="bi bi-diagram-3 text-2xl text-gray-300" aria-hidden="true"></i>
+    </a>
+  </section>
 
-      {{-- Personal Workspace: el JS lo recalcula según las cards --}}
-      <div class="hp-workspace" data-workspace data-limit="{{ $limit }}">
-        <div>
-          <p class="hp-workspace-title">Personal Workspace</p>
-          <p class="hp-workspace-meta"><span data-workspace-count>{{ $total }}</span> / {{ $limit }} docs</p>
-        </div>
-        <div class="hp-progress" role="progressbar" aria-valuenow="{{ $usedPct }}" aria-valuemin="0" aria-valuemax="100" data-workspace-progress>
-          <div class="hp-progress-bar" data-workspace-bar style="width: {{ $usedPct }}%"></div>
-        </div>
-        
+  <section class="grid gap-6 xl:grid-cols-3">
+    {{-- Documentos creados por día --}}
+    <div class="rounded-xl border border-gray-200 bg-white p-5 xl:col-span-2">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="font-bold text-gray-900">Documentos creados · últimos 14 días</h3>
+        <span class="text-sm text-gray-500">{{ $days->sum('total') }} en total</span>
       </div>
-    </aside>
 
-    {{-- ============ MAIN ============ --}}
-    <div class="hp-main">
-
-      <header class="hp-topbar">
-        <div class="hp-topbar-left">
-          <button class="hp-sidebar-toggle" type="button" data-sidebar-toggle aria-controls="hpSidebar" aria-label="Abrir menú">
-            <i class="bi bi-list" aria-hidden="true"></i>
-          </button>
-          <h1 class="hp-page-title">Dashboard</h1>
-        </div>
-
-        <div class="hp-topbar-actions">
-          <form class="hp-search" role="search" id="docSearchForm" onsubmit="return false">
-            <i class="bi bi-search" aria-hidden="true"></i>
-            <input id="docSearch" type="search" placeholder="Search..." aria-label="Buscar documentos" autocomplete="off">
-          </form>
-
-          <a class="hp-btn-primary" href="{{ $link('documents.create') }}">
-            <i class="bi bi-file-earmark-plus" aria-hidden="true"></i>
-            <span>New Document</span>
-          </a>
-
-          <img class="hp-avatar" src="{{ asset('backend/assets/images/avatar/avatar.jpg') }}" alt="Perfil">
-
-          <form method="POST" action="{{ route('logout') }}">
-            @csrf
-            <button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
-              <i class="bi bi-box-arrow-right" aria-hidden="true"></i><span class="hidden sm:inline">Salir</span>
-            </button>
-          </form>
-        </div>
-      </header>
-
-      <main class="hp-content">
-
-        <section class="hp-overview">
-          <div>
-            <h2 class="hp-overview-title">My Documents</h2>
-            <p class="hp-overview-sub">Manage, edit, and export your digital documents</p>
+      <div class="flex h-44 items-end gap-1.5 sm:gap-2" role="img" aria-label="Gráfica de documentos creados por día">
+        @foreach ($days as $day)
+          <div class="group flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1" title="{{ $day['label'] }}: {{ $day['total'] }}">
+            <span class="text-[11px] font-semibold text-gray-500 {{ $day['total'] ? '' : 'opacity-0' }}">{{ $day['total'] }}</span>
+            <div class="w-full rounded-t-md {{ $day['total'] ? 'bg-brand' : 'bg-gray-100' }}"
+                 style="height: {{ $day['total'] ? max(6, round($day['total'] / $maxPerDay * 100)) : 4 }}%"></div>
           </div>
-
-          {{-- Contadores: también filtran al hacer clic --}}
-          <div class="hp-stats" role="group" aria-label="Filtrar por estado">
-            <button type="button" class="hp-stat" data-filter="all" aria-pressed="false">
-              <span class="hp-stat-label">All:</span><span class="hp-stat-value" data-count="all">{{ $total }}</span>
-            </button>
-            <button type="button" class="hp-stat" data-filter="draft" aria-pressed="false">
-              <span class="hp-stat-label">Drafts:</span><span class="hp-stat-value" data-count="draft">{{ $drafts }}</span>
-            </button>
-            <button type="button" class="hp-stat" data-filter="completed" aria-pressed="false">
-              <span class="hp-stat-label">Completed:</span><span class="hp-stat-value" data-count="completed">{{ $completed }}</span>
-            </button>
-          </div>
-        </section>
-
-        <section class="hp-docs-grid" id="docsGrid" aria-label="Lista de documentos">
-          @foreach ($docs as $doc)
-            <article class="hp-card" data-doc data-id="{{ $doc['id'] }}" data-code="{{ $doc['code'] }}" data-status="{{ $doc['status'] }}">
-              <div class="hp-card-thumb">
-                <img src="{{ asset('backend/assets/images/documents/informePlantilla.png') }}" alt="Vista previa de {{ $doc['code'] }}">
-              </div>
-
-              <div class="hp-card-body">
-                <div class="hp-card-row">
-                  <span class="hp-badge hp-badge--{{ $doc['status'] }}" data-badge>{{ $doc['status'] }}</span>
-                  <button class="hp-card-menu" type="button" aria-label="Opciones de {{ $doc['code'] }}">
-                    <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
-                  </button>
-                </div>
-
-                <div class="hp-card-details">
-                  <p class="hp-card-code">{{ $doc['code'] }}</p>
-                  <p class="hp-card-date">{{ $doc['edited'] }}</p>
-                </div>
-
-                <a class="hp-btn-outline" href="{{ $link('documents.edit', ['document' => $doc['id']]) }}">Edit Document</a>
-              </div>
-            </article>
-          @endforeach
-
-          {{-- Sin documentos en absoluto --}}
-          <div class="hp-empty" data-empty @if($total > 0) hidden @endif>
-            Aún no tienes documentos. Crea el primero con “New Document”.
-          </div>
-
-          {{-- Búsqueda/filtro sin resultados --}}
-          <div class="hp-empty" data-no-results hidden>
-            No se encontraron documentos para tu búsqueda.
-          </div>
-        </section>
-      </main>
+        @endforeach
+      </div>
+      <div class="mt-2 flex gap-1.5 sm:gap-2">
+        @foreach ($days as $day)
+          <span class="min-w-0 flex-1 truncate text-center text-[10px] text-gray-400">{{ $day['label'] }}</span>
+        @endforeach
+      </div>
     </div>
-  </div>
-  <x-toast />
-</body>
-</html>
+
+    {{-- Por área --}}
+    <div class="rounded-xl border border-gray-200 bg-white p-5">
+      <h3 class="mb-4 font-bold text-gray-900">Documentos por área</h3>
+      <div class="space-y-4">
+        @forelse ($areas as $area)
+          <div>
+            <div class="mb-1 flex items-center justify-between gap-2 text-sm">
+              <span class="truncate font-medium text-gray-800">
+                {{ $area->name }}
+                @unless ($area->isActive())<span class="text-xs font-normal text-amber-600">(suspendida)</span>@endunless
+              </span>
+              <span class="shrink-0 text-gray-500">{{ $area->completed_count }}/{{ $area->documents_count }}</span>
+            </div>
+            <div class="h-2 overflow-hidden rounded-full bg-gray-100" role="progressbar" aria-valuenow="{{ $pct($area->completed_count, $area->documents_count) }}" aria-valuemin="0" aria-valuemax="100">
+              <div class="h-full rounded-full bg-brand" style="width: {{ $pct($area->completed_count, $area->documents_count) }}%"></div>
+            </div>
+            <p class="mt-1 text-xs text-gray-400">{{ $area->users_active_count }} {{ $area->users_active_count === 1 ? 'usuario activo' : 'usuarios activos' }} · completados / total</p>
+          </div>
+        @empty
+          <p class="text-sm text-gray-500">Aún no hay áreas.</p>
+        @endforelse
+      </div>
+    </div>
+  </section>
+
+  <section class="grid gap-6 xl:grid-cols-2">
+    {{-- Documentos recientes --}}
+    <div class="rounded-xl border border-gray-200 bg-white">
+      <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <h3 class="font-bold text-gray-900">Documentos recientes</h3>
+        <a href="{{ route('supervision.index') }}" class="text-sm font-medium text-brand hover:underline">Ver todos</a>
+      </div>
+      <ul class="divide-y divide-gray-100">
+        @forelse ($recentDocuments as $doc)
+          <li>
+            <a href="{{ route('documents.edit', $doc) }}" class="flex items-center justify-between gap-3 px-5 py-3 transition hover:bg-gray-50">
+              <span class="min-w-0">
+                <span class="block truncate text-sm font-semibold text-gray-900">{{ $doc->title }}</span>
+                <span class="block truncate text-xs text-gray-500">{{ $doc->code }} · {{ $doc->user?->name ?? '—' }} · {{ $doc->area?->name ?? 'Sin área' }}</span>
+              </span>
+              <span class="flex shrink-0 flex-col items-end gap-1">
+                <span class="hp-badge hp-badge--{{ $doc->status }}">{{ $doc->status }}</span>
+                <span class="text-[11px] text-gray-400">{{ $doc->created_at->format('d/m/Y') }}</span>
+              </span>
+            </a>
+          </li>
+        @empty
+          <li class="px-5 py-8 text-center text-sm text-gray-500">Aún no hay documentos.</li>
+        @endforelse
+      </ul>
+    </div>
+
+    {{-- Actividad reciente --}}
+    <div class="rounded-xl border border-gray-200 bg-white">
+      <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <h3 class="font-bold text-gray-900">Actividad reciente</h3>
+        <a href="{{ route('audit.index') }}" class="text-sm font-medium text-brand hover:underline">Auditoría completa</a>
+      </div>
+      <ul class="divide-y divide-gray-100">
+        @forelse ($recentActivity as $log)
+          @php
+            $dot = match (\App\Models\AuditLog::tone($log->event)) {
+                'green' => 'bg-green-500', 'red' => 'bg-red-500', 'amber' => 'bg-amber-500', 'indigo' => 'bg-indigo-500', default => 'bg-gray-400',
+            };
+          @endphp
+          <li class="flex items-start gap-3 px-5 py-3">
+            <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full {{ $dot }}"></span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm text-gray-900">{{ $log->description }}</span>
+              <span class="block truncate text-xs text-gray-500">{{ $log->user_name ?? 'Sin sesión' }} · {{ \App\Models\AuditLog::eventLabel($log->event) }}</span>
+            </span>
+            <span class="shrink-0 text-[11px] text-gray-400">{{ $log->created_at->locale('es')->diffForHumans(short: true) }}</span>
+          </li>
+        @empty
+          <li class="px-5 py-8 text-center text-sm text-gray-500">Sin movimientos todavía.</li>
+        @endforelse
+      </ul>
+    </div>
+  </section>
+</x-panel-layout>

@@ -28,18 +28,27 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Template::class, TemplatePolicy::class);
         Gate::policy(Document::class, DocumentPolicy::class);
 
-        // Audit trail: cambios en usuarios, áreas y plantillas.
+        // Audit trail: cambios en usuarios, áreas, plantillas y documentos.
         User::observe(AuditObserver::class);
         Area::observe(AuditObserver::class);
         Template::observe(AuditObserver::class);
+        Document::observe(AuditObserver::class);
 
         // Audit trail: autenticación.
         Event::listen(Login::class, function (Login $e) {
+            // Credenciales correctas pero cuenta desactivada / área suspendida: no es un inicio de sesión válido.
+            if ($reason = $e->user->accessDeniedReason()) {
+                AuditLogger::log('auth.login_blocked', "Acceso denegado ({$e->user->email}): {$reason}", $e->user, actor: $e->user);
+
+                return;
+            }
+
             AuditLogger::log('auth.login', "Inició sesión: {$e->user->email}", $e->user, actor: $e->user);
         });
 
         Event::listen(Logout::class, function (Logout $e) {
-            if ($e->user) {
+            // Los cierres forzados (cuenta bloqueada) ya se registran como login_blocked / session_revoked.
+            if ($e->user && ! $e->user->accessDeniedReason()) {
                 AuditLogger::log('auth.logout', "Cerró sesión: {$e->user->email}", $e->user, actor: $e->user);
             }
         });

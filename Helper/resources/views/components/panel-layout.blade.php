@@ -10,12 +10,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>{{ $title }} · HELPER Docs Maker</title>
+  <title>{{ config('app.HELPER', 'HELPER') }} | {{ $title ?? 'Panel' }}</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ asset('backend/assets/vendors/bootstrap-icons/bootstrap-icons.css') }}">
+  <link rel="icon" type="image/png" href="{{ asset('backend/assets/images/favicon/faviconHelper.png') }}">
 
   @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
@@ -36,34 +37,36 @@
       </a>
 
       <nav class="hp-nav">
-        <a class="hp-nav-item {{ request()->routeIs('dashboard', 'admin.dashboard', 'mod.dashboard', 'user.dashboard') ? 'is-active' : '' }}" href="{{ route('dashboard') }}">
-          <i class="bi bi-house" aria-hidden="true"></i><span>Inicio</span>
-        </a>
+        @if ($isAdmin)
+          <a class="hp-nav-item {{ request()->routeIs('admin.dashboard') ? 'is-active' : '' }}" href="{{ route('admin.dashboard') }}">
+            <i class="bi bi-speedometer2" aria-hidden="true"></i><span>Dashboard</span>
+          </a>
+        @endif
+
         <a class="hp-nav-item {{ request()->routeIs('documents.*') ? 'is-active' : '' }}" href="{{ route('documents.index') }}">
-          <i class="bi bi-file-earmark-text" aria-hidden="true"></i><span>Documentos</span>
+          <i class="bi bi-file-earmark-text" aria-hidden="true"></i><span>Mis documentos</span>
+        </a>
+        <a class="hp-nav-item {{ request()->routeIs('templates.*') ? 'is-active' : '' }}" href="{{ route('templates.index') }}">
+          <i class="bi bi-grid" aria-hidden="true"></i><span>Plantillas</span>
+        </a>
+
+        @if ($isAdmin || $authUser->hasRole('mod'))
+          <a class="hp-nav-item {{ request()->routeIs('supervision.*') ? 'is-active' : '' }}" href="{{ route('supervision.index') }}">
+            <i class="bi bi-clipboard-check" aria-hidden="true"></i><span>{{ $isAdmin ? 'Todos los documentos' : 'Documentos del área' }}</span>
+          </a>
+        @endif
+
+        <a class="hp-nav-item {{ request()->routeIs('audit.*') ? 'is-active' : '' }}" href="{{ route('audit.index') }}">
+          <i class="bi bi-shield-check" aria-hidden="true"></i><span>Auditoría</span>
         </a>
 
         @if ($isAdmin)
           <p class="mt-4 mb-1 px-4 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Administración</p>
-          <a class="hp-nav-item {{ request()->routeIs('templates.*') ? 'is-active' : '' }}" href="{{ route('templates.index') }}">
-            <i class="bi bi-grid" aria-hidden="true"></i><span>Plantillas</span>
-          </a>
           <a class="hp-nav-item {{ request()->routeIs('admin.users.*') ? 'is-active' : '' }}" href="{{ route('admin.users.index') }}">
             <i class="bi bi-people" aria-hidden="true"></i><span>Usuarios</span>
           </a>
           <a class="hp-nav-item {{ request()->routeIs('admin.areas.*') ? 'is-active' : '' }}" href="{{ route('admin.areas.index') }}">
             <i class="bi bi-diagram-3" aria-hidden="true"></i><span>Áreas</span>
-          </a>
-          <a class="hp-nav-item {{ request()->routeIs('audit.*') ? 'is-active' : '' }}" href="{{ route('audit.index') }}">
-            <i class="bi bi-shield-check" aria-hidden="true"></i><span>Auditoría</span>
-          </a>
-        @elseif ($authUser->hasRole('mod'))
-          <p class="mt-4 mb-1 px-4 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Mi área</p>
-          <a class="hp-nav-item {{ request()->routeIs('templates.*') ? 'is-active' : '' }}" href="{{ route('templates.index') }}">
-            <i class="bi bi-grid" aria-hidden="true"></i><span>Plantillas</span>
-          </a>
-          <a class="hp-nav-item {{ request()->routeIs('audit.*') ? 'is-active' : '' }}" href="{{ route('audit.index') }}">
-            <i class="bi bi-activity" aria-hidden="true"></i><span>Actividad</span>
           </a>
         @endif
 
@@ -106,6 +109,7 @@
     </div>
   </div>
 
+  <x-select-ui />
   <x-confirm />
   <x-toast />
 </body>
