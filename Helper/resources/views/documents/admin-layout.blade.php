@@ -76,8 +76,9 @@
           </div>
           <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <button type="submit" class="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
-              <i class="bi bi-box-arrow-right" aria-hidden="true"></i><span class="hidden sm:inline">Salir</span>
+            <button type="submit" class="hp-btn-outline">
+              <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+              <span class="hidden sm:inline">Salir</span>
             </button>
           </form>
         </div>

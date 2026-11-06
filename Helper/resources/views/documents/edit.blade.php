@@ -41,7 +41,7 @@
             No hay respuesta de OnlyOffice en <span class="font-mono text-xs">{{ $serverUrl }}</span>.
             Comprueba que el contenedor de Docker esté en ejecución y que <span class="font-mono text-xs">ONLYOFFICE_URL</span> sea correcta.
           </p>
-          <a href="{{ route('documents.index') }}" class="mt-4 inline-block rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">Volver a documentos</a>
+          <a href="{{ route('documents.index') }}" class="hp-btn-outline">Volver a documentos</a>
         </div>
       </div>
     </main>

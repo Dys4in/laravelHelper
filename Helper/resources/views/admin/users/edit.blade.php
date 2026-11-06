@@ -5,8 +5,8 @@
     @include('admin.users._form')
 
     <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
-      <a href="{{ route('admin.users.index') }}" class="hp-btn-ghost">Cancelar</a>
-      <button type="submit" class="hp-btn-primary">Guardar cambios</button>
+      <a href="{{ route('admin.users.index') }}" class="hp-btn-outline">Cancelar</a>
+      <button type="submit" class="hp-btn-outline">Guardar cambios</button>
     </div>
   </form>
 </x-admin-layout>

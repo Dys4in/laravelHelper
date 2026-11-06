@@ -1,12 +1,12 @@
 <x-admin-layout title="Usuarios">
   <section class="flex flex-wrap items-center justify-between gap-4">
     <div>
-      <h2 class="mb-1 text-xl font-bold text-gray-900">Usuarios</h2>
       <p class="text-sm text-gray-600">Solo el administrador puede crear cuentas y asignar su rol y área.</p>
     </div>
-    <button type="button" data-modal-open="create-user" class="hp-btn-primary">
-      <i class="bi bi-person-plus" aria-hidden="true"></i><span>Nuevo usuario</span>
-    </button>
+      <button type="button" data-modal-open="create-user" class="hp-btn-outline">
+          <i class="bi bi-file-earmark-plus mr-2" aria-hidden="true"></i>
+        <span>Nuevo usuario</span>
+      </button>
   </section>
 
   {{-- Filtros --}}
@@ -32,8 +32,8 @@
     </select>
 
     <div class="flex gap-2">
-      <button type="submit" class="flex-1 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">Filtrar</button>
-      <a href="{{ route('admin.users.index') }}" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Limpiar</a>
+      <button type="submit" class="hp-btn-outline flex-1">Filtrar</button>
+      <a href="{{ route('admin.users.index') }}" class="hp-btn-outline flex-1">Limpiar</a>
     </div>
   </form>
 
@@ -80,7 +80,7 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex items-center justify-end gap-2">
-                <a href="{{ route('admin.users.edit', $u) }}" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">Editar</a>
+                <a href="{{ route('admin.users.edit', $u) }}" class="hp-btn-outline px-3 py-1.5 text-xs font-medium ">Editar</a>
 
                 @unless ($u->is(auth()->user()))
                   <form method="POST" action="{{ route('admin.users.status', $u) }}"
@@ -115,8 +115,8 @@
       @include('admin.users._form', ['user' => $newUser, 'areas' => $formAreas, 'roles' => $roles])
 
       <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
-        <button type="button" data-modal-close class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancelar</button>
-        <button type="submit" class="hp-btn-primary">Crear usuario</button>
+        <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>
+        <button type="submit" class="hp-btn-outline">Crear usuario</button>
       </div>
     </form>
   </x-app-modal>

@@ -163,8 +163,8 @@
       @endif
 
       <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
-        <button type="button" data-modal-close class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancelar</button>
-        <button type="submit" class="hp-btn-primary"><i class="bi bi-pencil-square" aria-hidden="true"></i><span>Crear y abrir editor</span></button>
+        <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>
+        <button type="submit" class="hp-btn-outline"><i class="bi bi-pencil-square" aria-hidden="true"></i><span>Crear y abrir editor</span></button>
       </div>
     </form>
   </x-app-modal>

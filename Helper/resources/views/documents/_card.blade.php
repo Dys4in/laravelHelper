@@ -56,11 +56,11 @@
     <div class="hp-card-foot{{ $stackFoot ? ' hp-card-foot--column' : '' }}">
       {{-- Descarga: solo documentos completados (el backend también lo exige). --}}
       @can('download', $doc)
-        <a href="{{ route('documents.download', $doc) }}" class="{{ $done ? 'hp-btn-outline' : 'hp-btn-sm' }}">
+        <a href="{{ route('documents.download', $doc) }}" class="{{ $done ? 'hp-btn-outline' : 'hp-btn-outline' }}">
           <i class="bi bi-download" aria-hidden="true"></i> Descargar
         </a>
       @else
-        <button type="button" class="hp-btn-sm" disabled title="Disponible cuando el documento esté completado">
+        <button type="button" class="hp-btn-outline" disabled title="Disponible cuando el documento esté completado">
           <i class="bi bi-download" aria-hidden="true"></i> Descargar
         </button>
       @endcan

@@ -1,11 +1,11 @@
 <x-admin-layout title="Áreas">
   <section class="hp-overview">
     <div>
-      <h2 class="hp-overview-title">Áreas</h2>
       <p class="hp-overview-sub">Cada usuario pertenece a un área. Suspender un área impide que sus usuarios inicien sesión.</p>
     </div>
-    <button type="button" class="hp-btn-primary" data-modal-open="area-create">
-      <i class="bi bi-plus-lg" aria-hidden="true"></i> Nueva área
+    <button type="button" class="hp-btn-outline" data-modal-open="area-create">
+      <i class="bi bi-file-earmark-plus mr-2" aria-hidden="true"></i>
+      <span>Nueva área</span>
     </button>
   </section>
 
@@ -39,7 +39,7 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex items-center justify-end gap-2">
-                <a href="{{ route('admin.areas.edit', $area) }}" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">Editar</a>
+                <a href="{{ route('admin.areas.edit', $area) }}" class="hp-btn-outline px-3 py-1.5 text-xs font-medium ">Editar</a>
 
                 <form method="POST" action="{{ route('admin.areas.status', $area) }}"
                       data-confirm="{{ $area->isActive() ? 'Los '.$area->users_count.' usuario(s) de «'.$area->name.'» no podrán iniciar sesión mientras esté suspendida.' : 'Los usuarios de «'.$area->name.'» volverán a poder iniciar sesión.' }}"
@@ -94,8 +94,8 @@
       </div>
 
       <div class="hp-modal-foot">
-        <button type="button" class="hp-btn-ghost" data-modal-close>Cancelar</button>
-        <button type="submit" class="hp-btn-primary"><i class="bi bi-plus-lg" aria-hidden="true"></i> Crear área</button>
+        <button type="button" class="hp-btn-outline" data-modal-close>Cancelar</button>
+        <button type="submit" class="hp-btn-outline"><i class="bi bi-plus-lg" aria-hidden="true"> </i>Crear área</button>
       </div>
     </form>
   </x-hp-modal>
