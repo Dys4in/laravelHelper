@@ -1,62 +1,74 @@
 /* resources/css/styles.css
-   Componentes del dashboard HELPER (frame "dashboard-documents") con @apply.
-   Tailwind 3.4: se importa desde app.css y se compila con Vite. */
+   Diseño HELPER: sidebar oscuro + panel de contenido redondeado con fondo lavanda
+   (más oscuro que las cards blancas) + acento morado. Solo los botones tienen hover morado. */
 
 @layer components {
-  .hp-body { @apply m-0 bg-gray-50 font-helper text-gray-900; }
-  .hp-shell { @apply flex min-h-screen; }
+  .hp-body { @apply m-0 bg-ink font-helper antialiased; color: #1f2033; }
+  /* En escritorio el shell ocupa la pantalla: el panel redondeado queda fijo y solo scrollea el contenido */
+  .hp-shell { @apply flex min-h-screen lg:h-[100dvh] lg:min-h-0 lg:overflow-hidden; }
   .hp-body [hidden] { display: none !important; }
 
-  /* ---------------- Sidebar ---------------- */
+  /* ---------------- Sidebar (oscuro) ---------------- */
   .hp-backdrop { @apply hidden; }
-  .hp-backdrop.is-open { @apply fixed inset-0 z-30 block bg-gray-900/40 lg:hidden; }
+  .hp-backdrop.is-open { @apply fixed inset-0 z-30 block bg-ink/60 backdrop-blur-[2px] lg:hidden; }
 
   .hp-sidebar {
-    @apply fixed inset-y-0 left-0 z-40 flex w-[280px] -translate-x-full flex-col gap-10
-           border-r border-gray-200 bg-white px-5 py-8 transition-transform duration-200
-           lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0;
+    @apply fixed inset-y-0 left-0 z-40 flex w-[272px] -translate-x-full flex-col gap-9
+           bg-ink px-4 py-7 text-gray-300 shadow-2xl transition-transform duration-200
+           lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:shadow-none;
   }
   .hp-sidebar.is-open { @apply translate-x-0; }
 
-  .hp-brand { @apply flex items-center gap-[5px] no-underline; }
+  .hp-brand { @apply flex items-center gap-[6px] px-2 no-underline; }
   .hp-brand-logo { @apply h-[41px] w-[53px] object-cover; }
   .hp-brand-text { @apply flex flex-col gap-0.5; }
-  .hp-brand-title { @apply text-lg font-extrabold leading-none text-gray-900; }
-  .hp-brand-sub { @apply text-[11px] font-medium leading-none text-gray-400; }
+  .hp-brand-title { @apply text-lg font-extrabold leading-none tracking-tight text-white; }
+  .hp-brand-sub { @apply text-[11px] font-medium leading-none text-[#8e90ab]; }
 
-  .hp-nav { @apply flex flex-col gap-2; }
+  .hp-nav { @apply flex flex-col gap-1.5 overflow-y-auto; }
   .hp-nav-item {
-    @apply flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-gray-600 no-underline
-           transition-colors hover:bg-gray-50 hover:text-gray-900;
+    @apply flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[#a9abc4] no-underline
+           transition-colors hover:bg-white/5 hover:text-white
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-light/60;
   }
-  .hp-nav-item i { @apply text-xl leading-none; }
-  .hp-nav-item.is-active { @apply bg-brand-soft font-bold text-brand hover:bg-brand-soft hover:text-brand; }
+  .hp-nav-item i { @apply text-xl leading-none text-[#8e90ab] transition-colors; }
+  .hp-nav-item:hover i { @apply text-white; }
+  .hp-nav-item.is-active {
+    @apply bg-gradient-to-r from-brand/40 to-brand/10 font-semibold text-white ring-1 ring-inset ring-brand/30
+           hover:bg-brand/30 hover:text-white;
+  }
+  .hp-nav-item.is-active i { @apply text-[#b59cff]; }
+  /* Títulos de sección del menú (llevan clases inline text-gray-400) */
+  .hp-body .hp-sidebar .text-gray-400 { color: #70728f; }
 
-  .hp-workspace { @apply mt-auto flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4; }
-  .hp-workspace-title { @apply mb-1 text-[13px] font-bold text-gray-900; }
-  .hp-workspace-meta { @apply text-xs text-gray-600; }
-  .hp-progress { @apply h-1.5 w-full overflow-hidden rounded-[3px] bg-gray-200; }
-  .hp-progress-bar { @apply h-full bg-brand transition-[width] duration-300; }
-  .hp-workspace-link { @apply text-xs font-semibold text-brand no-underline hover:underline; }
+  .hp-workspace { @apply mt-auto flex flex-col gap-3 rounded-2xl border border-ink-line bg-ink-raised p-4; }
+  .hp-workspace-title { @apply mb-1 text-[13px] font-bold text-white; }
+  .hp-workspace-meta { @apply text-xs text-[#a9abc4]; }
+  .hp-progress { @apply h-1.5 w-full overflow-hidden rounded-[3px] bg-ink-line; }
+  .hp-progress-bar { @apply h-full bg-brand-light transition-[width] duration-300; }
+  .hp-workspace-link { @apply text-xs font-semibold text-[#b59cff] no-underline hover:underline; }
 
   /* ---------------- Main / Topbar ---------------- */
-  .hp-main { @apply flex min-w-0 flex-1 flex-col; }
+  .hp-main {
+    @apply flex min-w-0 flex-1 flex-col bg-canvas lg:my-3 lg:mr-3 lg:min-h-0 lg:overflow-hidden lg:rounded-[28px];
+  }
 
   .hp-topbar {
-    @apply flex items-center justify-between gap-4 border-b border-gray-200 bg-white px-5 py-[18px] lg:px-10;
+    @apply flex shrink-0 items-center justify-between gap-4 bg-transparent px-5 pb-2 pt-5 lg:px-10 lg:pt-8;
   }
   .hp-topbar-left { @apply flex items-center gap-3; }
-  .hp-page-title { @apply text-[22px] font-bold leading-none text-gray-900; }
+  .hp-page-title { @apply text-[26px] font-bold leading-none tracking-tight text-gray-900; }
   .hp-topbar-actions { @apply flex items-center gap-4; }
 
   .hp-sidebar-toggle {
-    @apply flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-lg border border-gray-200
-           bg-white text-xl leading-none lg:hidden;
+    @apply flex h-[40px] w-[40px] cursor-pointer items-center justify-center rounded-xl border border-line
+           bg-white text-xl leading-none shadow-card transition hover:border-brand hover:text-brand lg:hidden;
   }
 
   .hp-search {
-    @apply flex h-[38px] w-full items-center gap-2 rounded-lg border border-gray-200 bg-gray-100 px-3
-           text-[13px] text-gray-400 transition focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/10;
+    @apply flex h-[42px] w-full items-center gap-2 rounded-xl border border-line bg-white px-3.5
+           text-[13px] text-gray-400 shadow-card transition
+           focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15;
   }
   .hp-search > i { @apply shrink-0 leading-none; }
   .hp-search input {
@@ -69,19 +81,28 @@
   .hp-search input::-ms-clear { display: none; }
   .hp-search-clear {
     @apply -mr-1 flex h-[26px] w-[26px] shrink-0 cursor-pointer items-center justify-center rounded-md border-0
-           bg-transparent p-0 text-[13px] leading-none text-gray-400 transition hover:bg-gray-200 hover:text-gray-700;
+           bg-transparent p-0 text-[13px] leading-none text-gray-400 transition hover:bg-brand-soft hover:text-brand;
   }
 
   .hp-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-brand px-4 py-2.5
-           text-sm font-semibold text-white no-underline transition hover:brightness-110;
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-b from-brand-light to-brand
+           px-5 py-2.5 text-sm font-semibold text-white no-underline shadow-brand transition
+           hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:ring-offset-2;
   }
   .hp-btn-primary span { @apply hidden sm:inline; }
 
   .hp-avatar { @apply h-[38px] w-[38px] shrink-0 rounded-full object-cover; }
 
-  /* ---------------- Content ---------------- */
-  .hp-content { @apply flex flex-col gap-8 p-5 lg:p-10; }
+  /* ---------------- Content (único que hace scroll) ---------------- */
+  .hp-content {
+    @apply flex flex-col gap-6 p-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:overscroll-contain lg:px-10 lg:pb-10 lg:pt-5;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(109 60 232 / 0.35) transparent;
+  }
+  .hp-content::-webkit-scrollbar { width: 10px; }
+  .hp-content::-webkit-scrollbar-track { background: transparent; margin-block: 14px; }
+  .hp-content::-webkit-scrollbar-thumb { background: rgb(109 60 232 / 0.30); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+  .hp-content::-webkit-scrollbar-thumb:hover { background: rgb(109 60 232 / 0.55); background-clip: content-box; }
 
   .hp-overview { @apply flex flex-wrap items-center justify-between gap-4; }
   .hp-overview-title { @apply mb-1 text-xl font-bold text-gray-900; }
@@ -90,7 +111,7 @@
   /* Contadores (botones que filtran) */
   .hp-stats { @apply flex flex-wrap gap-3; }
   .hp-stat {
-    @apply flex cursor-pointer gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[13px]
+    @apply flex cursor-pointer gap-2 rounded-xl border border-line bg-white px-3.5 py-2 text-[13px] shadow-card
            transition-colors hover:border-brand;
   }
   .hp-stat-label { @apply font-semibold text-gray-400; }
@@ -100,32 +121,32 @@
   .hp-stat[aria-pressed="true"] .hp-stat-value { @apply text-brand; }
 
   /* ---------------- Cards ---------------- */
-  .hp-docs-grid { @apply grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3; }
+  .hp-docs-grid { @apply grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3; }
 
-  .hp-card { @apply flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white; }
+  .hp-card { @apply flex flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-card; }
   .hp-card-thumb { @apply h-40 bg-gray-50; }
   .hp-card-thumb img { @apply block h-40 w-full object-cover; }
   .hp-card-body { @apply flex flex-col gap-3 p-5; }
   .hp-card-row { @apply flex min-h-[23px] items-center justify-between; }
 
-  .hp-badge { @apply inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold uppercase leading-[15px]; }
+  .hp-badge { @apply inline-flex whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-semibold capitalize leading-[14px]; }
   .hp-badge--completed { @apply bg-success-bg text-success-text; }
-  .hp-badge--draft { @apply bg-gray-200 text-gray-600; }
+  .hp-badge--draft { @apply bg-brand-soft text-brand; }
 
-  .hp-card-menu { @apply ml-auto cursor-pointer border-0 bg-transparent p-0 text-lg leading-none text-gray-600 hover:text-gray-900; }
+  .hp-card-menu { @apply ml-auto cursor-pointer border-0 bg-transparent p-0 text-lg leading-none text-gray-600 hover:text-brand; }
 
   .hp-card-details { @apply flex flex-col gap-1; }
   .hp-card-code { @apply truncate text-[15px] font-bold text-gray-900; }
   .hp-card-date { @apply text-[13px] text-gray-600; }
 
   .hp-btn-outline {
-    @apply flex items-center justify-center rounded-lg border border-gray-200 bg-transparent px-3 py-2
+    @apply flex items-center justify-center rounded-xl border border-line bg-white px-3 py-2
            text-[13px] font-semibold text-gray-600 no-underline transition
            hover:border-brand hover:bg-brand-soft hover:text-brand;
   }
 
   .hp-empty {
-    @apply col-span-full rounded-xl border border-dashed border-gray-200 bg-white p-12 text-center text-gray-600;
+    @apply col-span-full rounded-2xl border border-dashed border-gray-300 bg-white/60 p-12 text-center text-gray-600;
   }
 
   /* =====================================================================
@@ -135,44 +156,45 @@
   .hp-input,
   .hp-select,
   .hp-textarea {
-    @apply block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-900 shadow-none
-           transition placeholder:text-gray-400 hover:border-gray-300
+    @apply block w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-[13px] text-gray-900 shadow-none
+           transition placeholder:text-gray-400
            focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20;
   }
   .hp-select { @apply cursor-pointer pr-9; }
   .hp-input[aria-invalid="true"],
   .hp-select[aria-invalid="true"] { @apply border-red-400 focus:border-red-500 focus:ring-red-200; }
   .hp-file {
-    @apply block w-full cursor-pointer rounded-lg border border-gray-200 bg-white text-[13px] text-gray-600
+    @apply block w-full cursor-pointer rounded-xl border border-line bg-white text-[13px] text-gray-600
            transition file:mr-4 file:cursor-pointer file:border-0 file:bg-brand file:px-4 file:py-2.5
-           file:text-[13px] file:font-semibold file:text-white hover:border-gray-300 hover:file:brightness-110;
+           file:text-[13px] file:font-semibold file:text-white hover:file:brightness-110;
   }
   .hp-help { @apply mt-1 text-xs text-gray-500; }
   .hp-error { @apply mt-1 text-xs font-medium text-red-600; }
-  .hp-static { @apply rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-[13px] text-gray-700; }
+  .hp-static { @apply rounded-xl border border-line bg-gray-50 px-3.5 py-2.5 text-[13px] text-gray-700; }
 
   /* Barra de herramientas: buscador + filtros + acción principal */
   .hp-toolbar { @apply flex flex-wrap items-center gap-3; }
-  .hp-filterbar { @apply flex flex-wrap items-end gap-3 rounded-xl border border-gray-200 bg-white p-4; }
+  .hp-filterbar { @apply flex flex-wrap items-end gap-3 rounded-2xl border border-line bg-white p-4 shadow-card; }
   .hp-filter { @apply flex min-w-[150px] flex-1 flex-col; }
-  .hp-filter-label { @apply mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400; }
+  .hp-filter-label { @apply mb-1 text-[11px] font-semibold tracking-wide text-gray-400; }
   /* El buscador del topbar se oculta en móvil; en contenido debe verse siempre */
   .hp-search.hp-search--block { @apply flex w-full min-w-[220px] flex-1 sm:max-w-md; }
 
   /* Botones */
   .hp-btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-gray-200 bg-white
-           px-4 py-2.5 text-sm font-semibold text-gray-700 no-underline transition hover:bg-gray-50;
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-line bg-white
+           px-4 py-2.5 text-sm font-semibold text-gray-700 no-underline transition
+           hover:border-brand hover:bg-brand-soft hover:text-brand;
   }
   .hp-btn-sm {
-    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-2.5 py-1.5
-           text-xs font-medium text-gray-600 no-underline transition hover:bg-gray-50 hover:text-gray-900;
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-line bg-white px-2.5 py-1.5
+           text-xs font-medium text-gray-600 no-underline transition hover:border-brand hover:bg-brand-soft hover:text-brand;
   }
-  .hp-btn-sm:disabled { @apply cursor-not-allowed opacity-50 hover:bg-white hover:text-gray-600; }
-  .hp-btn-sm--ok { @apply border-green-300 text-green-700 hover:bg-green-50 hover:text-green-800; }
-  .hp-btn-sm--warn { @apply border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800; }
-  .hp-btn-sm--danger { @apply border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800; }
-  .hp-btn-outline:disabled { @apply cursor-not-allowed opacity-50 hover:border-gray-200 hover:bg-transparent hover:text-gray-600; }
+  .hp-btn-sm:disabled { @apply cursor-not-allowed opacity-50 hover:border-line hover:bg-white hover:text-gray-600; }
+  .hp-btn-sm--ok { @apply border-green-300 text-green-700 hover:border-green-400 hover:bg-green-50 hover:text-green-800; }
+  .hp-btn-sm--warn { @apply border-amber-300 text-amber-700 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-800; }
+  .hp-btn-sm--danger { @apply border-red-200 text-red-700 hover:border-red-300 hover:bg-red-50 hover:text-red-800; }
+  .hp-btn-outline:disabled { @apply cursor-not-allowed opacity-50 hover:border-line hover:bg-white hover:text-gray-600; }
   button.hp-btn-outline { @apply cursor-pointer; }
 
   /* Contadores que son enlaces (filtros del lado del servidor) */
@@ -184,9 +206,9 @@
   /* =====================================================================
      Tarjetas unificadas (documentos y plantillas)
      ===================================================================== */
-  .hp-card { @apply h-full transition hover:border-gray-300 hover:shadow-sm; container-type: inline-size; }
+  .hp-card { @apply h-full; container-type: inline-size; }
   .hp-card .hp-card-body { @apply flex-1; }
-  .hp-card-icon { @apply flex h-8 w-8 items-center justify-center rounded-lg bg-brand-soft text-lg text-brand; }
+  .hp-card-icon { @apply flex h-9 w-9 items-center justify-center rounded-xl bg-brand-soft text-lg text-brand; }
   .hp-card-title { @apply truncate text-[15px] font-bold leading-snug text-gray-900; }
   .hp-card-text { @apply line-clamp-2 min-h-[2.5rem] text-[13px] text-gray-600; }
   .hp-card-meta { @apply mt-1 flex flex-col gap-1 text-xs text-gray-500; }
@@ -215,8 +237,8 @@
      Ventanas modales (<dialog>)
      ===================================================================== */
   .hp-modal {
-    @apply m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto rounded-2xl border-0 bg-white p-0
-           text-gray-900 shadow-2xl backdrop:bg-gray-900/50 backdrop:backdrop-blur-[2px];
+    @apply m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto rounded-3xl border-0 bg-white p-0
+           text-gray-900 shadow-2xl backdrop:bg-ink/60 backdrop:backdrop-blur-[2px];
   }
   .hp-modal-head { @apply flex items-start gap-3 border-b border-gray-100 px-6 py-5; }
   .hp-modal-icon { @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-xl text-brand; }
@@ -224,7 +246,7 @@
   .hp-modal-sub { @apply mt-0.5 text-[13px] text-gray-600; }
   .hp-modal-close {
     @apply -mr-2 -mt-1 ml-auto flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border-0
-           bg-transparent text-gray-400 transition hover:bg-gray-100 hover:text-gray-700;
+           bg-transparent text-gray-400 transition hover:bg-brand-soft hover:text-brand;
   }
   .hp-modal-body { @apply flex flex-col gap-4 px-6 py-5; }
   .hp-modal-grid { @apply grid gap-4 sm:grid-cols-2; }
@@ -235,14 +257,17 @@
      Dashboard
      ===================================================================== */
   .hp-tiles { @apply grid grid-cols-2 gap-4 lg:grid-cols-4; }
-  .hp-tile { @apply flex items-start gap-3 rounded-xl border border-gray-200 bg-white p-4; }
-  .hp-tile-icon { @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xl; }
-  .hp-tile-label { @apply text-[11px] font-semibold uppercase tracking-wide text-gray-500; }
-  .hp-tile-value { @apply text-2xl font-extrabold leading-tight text-gray-900; }
+  /* Icono a la derecha, texto a la izquierda (como el diseño); el HTML no cambia */
+  .hp-tile {
+    @apply flex flex-row-reverse items-start justify-between gap-3 rounded-2xl border border-line bg-white p-5 shadow-card;
+  }
+  .hp-tile-icon { @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl; }
+  .hp-tile-label { @apply text-[13px] font-medium text-gray-500; }
+  .hp-tile-value { @apply mt-1 text-[28px] font-extrabold leading-tight tracking-tight text-gray-900; }
   .hp-tile-hint { @apply mt-0.5 text-xs text-gray-500; }
 
-  .hp-dash-grid { @apply grid gap-6 lg:grid-cols-3; }
-  .hp-panel { @apply min-w-0 rounded-xl border border-gray-200 bg-white p-5; }
+  .hp-dash-grid { @apply grid gap-5 lg:grid-cols-3; }
+  .hp-panel { @apply min-w-0 rounded-2xl border border-line bg-white p-5 shadow-card; }
   .hp-panel-head { @apply mb-4 flex items-center justify-between gap-3; }
   .hp-panel-title { @apply text-[15px] font-bold text-gray-900; }
   .hp-panel-link { @apply text-xs font-semibold text-brand no-underline hover:underline; }
@@ -263,11 +288,72 @@
 
   .hp-chart { @apply flex h-36 items-end gap-3; }
   .hp-chart-col { @apply flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1; }
-  .hp-chart-bar { @apply min-h-[3px] w-full max-w-[40px] rounded-t-md bg-brand/80 transition-[height]; }
+  .hp-chart-bar { @apply min-h-[3px] w-full max-w-[40px] rounded-t-md bg-gradient-to-t from-brand/60 to-brand transition-[height]; }
   .hp-chart-bar--zero { @apply bg-gray-200; }
   .hp-chart-value { @apply text-[11px] font-semibold text-gray-700; }
   .hp-chart-label { @apply text-[11px] text-gray-500; }
 }
+
+/* =========================================================================
+   Ajustes globales del panel para vistas con clases Tailwind inline
+   (tablas, formularios, perfil, auditoría, dashboard de admin...).
+   Van fuera de @layer y con prefijo .hp-body para que ganen a las utilidades
+   sin editar cada vista. No tocan el contenido, solo el aspecto.
+   ========================================================================= */
+.hp-body {
+  --hp-brand: #6d3ce8;
+}
+
+/* Paleta de grises con un ligero matiz azulado (más acorde al morado) */
+.hp-body .text-gray-400 { color: #9a9cb3; }
+.hp-body .text-gray-500 { color: #6b6d85; }
+.hp-body .text-gray-600 { color: #55576f; }
+.hp-body .text-gray-700 { color: #3f4157; }
+.hp-body .text-gray-800,
+.hp-body .text-gray-900 { color: #1f2033; }
+.hp-body .border-gray-200 { border-color: #dcd6ee; }
+.hp-body .border-gray-100 { border-color: #eeebf7; }
+.hp-body .divide-gray-100 > :not([hidden]) ~ :not([hidden]) { border-color: #eeebf7; }
+.hp-body .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: #e6e1f3; }
+.hp-body .bg-gray-50 { background-color: #f7f5fd; }
+.hp-body .hover\:bg-gray-50:hover { background-color: #f1edfc; }
+.hp-body .bg-gray-100 { background-color: #efecf8; }
+
+/* Cards / contenedores con borde + fondo blanco (inline): esquinas más suaves y sombra sutil (sin hover).
+   Se excluyen modales, toasts y menús flotantes (llevan sombra grande). */
+.hp-body .border.bg-white:not(.shadow-lg):not(.shadow-xl):not(.hp-modal) {
+  border-color: #dcd6ee;
+  box-shadow: 0 1px 2px rgb(34 34 47 / 0.05), 0 4px 14px -8px rgb(34 34 47 / 0.12);
+  transition: border-color .15s ease, background-color .15s ease, color .15s ease;
+}
+.hp-body .border.bg-white.rounded-xl:not(.shadow-lg):not(.shadow-xl),
+.hp-body .border.bg-white.rounded-lg:not(.shadow-lg):not(.shadow-xl) { border-radius: 1rem; }
+.hp-body .border.bg-white.rounded-lg:is(a, button, label) { border-radius: .75rem; }
+/* Solo botones/enlaces con borde (ej. "Salir"): mismo hover que .hp-btn-outline */
+.hp-body :is(a, button).border.bg-white:not(.shadow-lg):not(.shadow-xl):hover {
+  border-color: var(--hp-brand);
+  background-color: #f0eaff;
+  box-shadow: none;
+}
+.hp-body button[type="submit"].border.bg-white:hover { color: var(--hp-brand); }
+
+/* Inputs, selects y textareas: esquinas y borde (sin hover) */
+.hp-body :is(
+    input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="submit"], [type="button"], [type="range"], [type="color"], [type="file"]),
+    select,
+    textarea
+  ) {
+  border-radius: .75rem;
+  border-color: #dcd6ee;
+}
+.hp-body :is(input, select, textarea):not(:disabled, [readonly]):focus {
+  border-color: var(--hp-brand);
+}
+.hp-body input[type="checkbox"]:checked,
+.hp-body input[type="radio"]:checked { color: var(--hp-brand); }
+
+/* Tablas */
+.hp-body table thead { background-color: #f7f5fd; }
 
 /* Animación de entrada de las ventanas modales (fuera de la capa para que Tailwind no la elimine) */
 @keyframes hp-modal-in {

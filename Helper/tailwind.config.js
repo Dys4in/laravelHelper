@@ -1,5 +1,4 @@
 // tailwind.config.js  (raíz del proyecto, Tailwind 3.4.19)
-// Es TU archivo (Breeze) con lo mínimo agregado, marcado con ◄◄.
 import defaultTheme from 'tailwindcss/defaultTheme';
 import forms from '@tailwindcss/forms';
 
@@ -9,10 +8,9 @@ export default {
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
-        './resources/js/**/*.js',   // ◄◄ dashboard.js agrega clases (is-open, hp-badge--*)
+        './resources/js/**/*.js',
     ],
 
-    // ◄◄ Clases que se arman dinámicamente (Blade: hp-badge--{{ status }}) y Tailwind no puede detectar
     safelist: [
         'hp-badge--draft',
         'hp-badge--completed',
@@ -23,21 +21,33 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                // Tu fuente actual (login y demás vistas) se queda igual
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
-                // ◄◄ Fuente del dashboard HELPER (clase font-helper, usada en styles.css)
                 helper: ['Inter', ...defaultTheme.fontFamily.sans],
             },
-            // ◄◄ Colores del diseño de Figma
             colors: {
                 brand: {
-                    DEFAULT: '#523ca6',
-                    soft: '#eef2ff',
+                    DEFAULT: '#6d3ce8',
+                    dark: '#5a2fd0',
+                    light: '#8b5cf6',
+                    soft: '#f0eaff',
                 },
+                // Sidebar oscuro
+                ink: {
+                    DEFAULT: '#22222f',
+                    raised: '#2c2c3d',
+                    line: '#383a4f',
+                },
+                // Fondo del contenido (más oscuro que las cards blancas)
+                canvas: '#e8e4f4',
+                line: '#dcd6ee',
                 success: {
                     bg: '#def7ec',
                     text: '#03543f',
                 },
+            },
+            boxShadow: {
+                brand: '0 10px 24px -10px rgb(109 60 232 / 0.65)',
+                card: '0 1px 2px rgb(34 34 47 / 0.05), 0 4px 14px -8px rgb(34 34 47 / 0.12)',
             },
         },
     },
