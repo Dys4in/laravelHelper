@@ -50,11 +50,11 @@
 
   /* ---------------- Main / Topbar ---------------- */
   .hp-main {
-    @apply flex min-w-0 flex-1 flex-col bg-canvas lg:my-3 lg:mr-3 lg:min-h-0 lg:overflow-hidden lg:rounded-[28px];
+    @apply flex min-w-0 flex-1 flex-col bg-canvas lg:h-full lg:min-h-0 lg:overflow-hidden lg:rounded-l-[28px];
   }
 
   .hp-topbar {
-    @apply flex shrink-0 items-center justify-between gap-4 bg-transparent px-5 pb-2 pt-5 lg:px-10 lg:pt-8;
+    @apply flex shrink-0 items-center justify-between gap-4 bg-transparent px-5 pb-2 pt-5 lg:px-10 lg:pt-6;
   }
   .hp-topbar-left { @apply flex items-center gap-3; }
   .hp-page-title { @apply text-[26px] font-bold leading-none tracking-tight text-gray-900; }

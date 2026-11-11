@@ -19,7 +19,7 @@
   <form method="GET" action="{{ route('supervision.index') }}" data-autosubmit class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 {{ $isAdmin ? 'lg:grid-cols-5' : 'lg:grid-cols-4' }}">
     <div class="hp-search sm:col-span-2 lg:col-span-1">
       <i class="bi bi-search" aria-hidden="true"></i>
-      <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar por código, título o autor..." aria-label="Buscar documentos" autocomplete="off">
+      <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar por código, título o autor..." aria-label="Buscar documentos" autocomplete="off" class="h-11 px-4 rounded-xl">
     </div>
 
     <select name="author" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
@@ -45,7 +45,7 @@
     @endif
 
     <div class="flex gap-2">
-      <button type="submit" class="hp-btn-outline flex-1">Filtrar</button>
+
       <a href="{{ route('supervision.index') }}" class="hp-btn-outline flex-1">Limpiar</a>
     </div>
   </form>

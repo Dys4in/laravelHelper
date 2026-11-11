@@ -19,7 +19,7 @@
   <form method="GET" action="{{ route('audit.index') }}" data-autosubmit class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
     <div class="hp-search sm:col-span-2" role="search">
       <i class="bi bi-search" aria-hidden="true"></i>
-      <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Buscar por el usuario, detalle o area..."
+      <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Buscar por el usuario, detalle o area..."class="h-11 px-4 rounded-xl"
              aria-label="Buscar en el registro de auditoría" autocomplete="off">
     </div>
 
@@ -54,7 +54,7 @@
     </div>
 
     <div class="flex gap-2 sm:col-span-2 lg:col-span-1">
-      <button type="submit" class="hp-btn-outline flex-1">Filtrar</button>
+      
       <a href="{{ route('audit.index') }}" class="hp-btn-outline flex-1">Limpiar</a>
     </div>
   </form>

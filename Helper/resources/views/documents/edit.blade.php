@@ -13,12 +13,11 @@
 
     <header class="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4">
       <div class="flex min-w-0 items-center gap-3">
-        <a href="{{ route('documents.index') }}" class="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
+        <a href="{{ route('documents.index') }}" class="hp-btn-outline flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
           Documentos
         </a>
         <div class="min-w-0 leading-tight">
-          <p class="truncate text-sm font-semibold text-gray-900">{{ $document->title }}</p>
           <p class="truncate text-xs text-gray-500">{{ $document->code }} · Creado por <span class="font-medium text-gray-700">{{ $document->user?->name ?? '—' }}</span></p>
         </div>
       </div>

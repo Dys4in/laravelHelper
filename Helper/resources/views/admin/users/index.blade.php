@@ -13,18 +13,18 @@
   <form method="GET" action="{{ route('admin.users.index') }}" class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
     <div class="hp-search" role="search">
       <i class="bi bi-search" aria-hidden="true"></i>
-      <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar por nombre, abreviatura, correo o usuario"
+      <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar por nombre, abreviatura, correo o usuario" class="h-11 px-4 rounded-xl max-w-full"
              aria-label="Buscar usuarios" autocomplete="off">
     </div>
 
-    <select name="area" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
+    <select name="area" onchange="this.form.submit()" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
       <option value="">Todas las áreas</option>
       @foreach ($areas as $area)
         <option value="{{ $area->id }}" @selected(request('area') == $area->id)>{{ $area->name }}{{ $area->trashed() ? ' (eliminada)' : '' }}</option>
       @endforeach
     </select>
 
-    <select name="role" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
+    <select name="role" onchange="this.form.submit()" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
       <option value="">Todos los roles</option>
       @foreach ($roles as $role)
         <option value="{{ $role->value }}" @selected(request('role') === $role->value)>{{ $role->label() }}</option>
@@ -32,7 +32,6 @@
     </select>
 
     <div class="flex gap-2">
-      <button type="submit" class="hp-btn-outline flex-1">Filtrar</button>
       <a href="{{ route('admin.users.index') }}" class="hp-btn-outline flex-1">Limpiar</a>
     </div>
   </form>

@@ -36,7 +36,7 @@
     <form method="GET" action="{{ route('templates.index') }}" data-autosubmit class="flex flex-1 flex-wrap items-center gap-3">
       <div class="hp-search hp-search--block">
         <i class="bi bi-search" aria-hidden="true"></i>
-        <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar plantilla..." aria-label="Buscar plantillas" autocomplete="off">
+        <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar plantilla..." aria-label="Buscar plantillas" autocomplete="off" class="h-11 px-4 rounded-xl">
       </div>
     </form>
 
@@ -178,7 +178,7 @@
         @include('templates._form', ['template' => $newTemplate, 'areas' => $formAreas])
 
         <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
-          <button type="button" data-modal-close class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancelar</button>
+          <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>
           <button type="submit" class="hp-btn-outline"><i class="bi bi-upload mr-2" aria-hidden="true"></i><span>Subir plantilla</span></button>
         </div>
       </form>

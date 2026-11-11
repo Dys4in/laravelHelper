@@ -63,7 +63,7 @@
     select.tabIndex = -1;
     select.setAttribute('aria-hidden', 'true');
 
-    var button = el('button', 'flex w-full items-center justify-between gap-2 rounded-lg border bg-white px-3 py-2 text-left text-sm transition focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 '
+    var button = el('button', 'flex h-11 w-full items-center justify-between gap-2 rounded-xl border bg-white px-3 text-left text-sm transition focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400'
       + (hasError ? 'border-red-400 focus:border-red-400 focus:ring-red-300' : 'border-gray-300 hover:border-gray-400 focus:border-brand focus:ring-brand'));
     button.type = 'button';
     button.setAttribute('data-click-guard-ignore', ''); // abrir/cerrar rápido no debe bloquearse
@@ -103,7 +103,7 @@
       if (searchable) {
         var bar = el('div', 'flex items-center gap-2 border-b border-gray-100 px-3 py-2');
         bar.appendChild(icon(SEARCH, 'h-4 w-4 shrink-0 text-gray-400'));
-        search = el('input', 'w-full border-0 bg-transparent p-0 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0');
+        search = el('input', 'w-full border-0 bg-transparent p-1 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0');
         search.type = 'text';
         search.placeholder = 'Buscar...';
         search.setAttribute('aria-label', 'Buscar en la lista');

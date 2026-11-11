@@ -1,3 +1,6 @@
+body{
+    background-color: #22222f;
+}
 .login-page {
     min-height: 100vh;
     min-height: 100dvh;
@@ -18,7 +21,7 @@
     margin: 0 auto;
     overflow: hidden;
     border-radius: clamp(12px, 2vw, 16px);
-    background: #ffffff;
+    background: #e8e4f4;
     border: 1px solid #e5e7eb;
     box-shadow:
         0 18px 50px rgba(20, 25, 45, 0.09),
@@ -194,6 +197,7 @@
     -webkit-appearance: none;
     width: 18px;
     height: 18px;
+    color: #7046d3;
     margin: 0;
     border: 2px solid #7046d3;
     border-radius: 4px;

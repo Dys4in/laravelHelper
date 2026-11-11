@@ -82,12 +82,12 @@
 
       <div class="hp-modal-body">
         <div>
-          <label for="area-create-name" class="hp-label">Nombre del área *</label>
+          <label for="area-create-name" class="hp-label">Nombre del área</label>
           <input id="area-create-name" name="name" type="text" value="{{ $areaOpen ? old('name') : '' }}" required maxlength="100" class="hp-input" @if ($areaOpen && $errors->has('name')) aria-invalid="true" @endif>
           @if ($areaOpen && $errors->has('name'))<p class="hp-error">{{ $errors->first('name') }}</p>@endif
         </div>
         <div>
-          <label for="area-create-description" class="hp-label">Descripción</label>
+          <label for="area-create-description" class="hp-label">Abreviatura</label>
           <input id="area-create-description" name="description" type="text" value="{{ $areaOpen ? old('description') : '' }}" maxlength="255" class="hp-input">
           @if ($areaOpen && $errors->has('description'))<p class="hp-error">{{ $errors->first('description') }}</p>@endif
         </div>
@@ -95,7 +95,7 @@
 
       <div class="hp-modal-foot">
         <button type="button" class="hp-btn-outline" data-modal-close>Cancelar</button>
-        <button type="submit" class="hp-btn-outline"><i class="bi bi-plus-lg" aria-hidden="true"> </i>Crear área</button>
+        <button type="submit" class="hp-btn-outline"><i class="bi bi-plus-lg" aria-hidden="true" style="margin-right: 0.2rem;"></i>Crear área</button>
       </div>
     </form>
   </x-hp-modal>

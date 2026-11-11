@@ -10,7 +10,7 @@
     </div>
 
     <div>
-      <label for="description" class="block text-sm font-medium text-gray-700">Descripción</label>
+      <label for="description" class="block text-sm font-medium text-gray-700">Abreviatura</label>
       <input id="description" name="description" type="text" value="{{ old('description', $area->description) }}" maxlength="255"
              class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand @error('description') !border-red-400 @enderror">
     </div>

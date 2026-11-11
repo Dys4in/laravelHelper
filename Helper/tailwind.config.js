@@ -37,8 +37,8 @@ export default {
                     raised: '#2c2c3d',
                     line: '#383a4f',
                 },
-                // Fondo del contenido (más oscuro que las cards blancas)
-                canvas: '#e8e4f4',
+                // Fondo 
+                canvas: '#e1dfe9',
                 line: '#dcd6ee',
                 success: {
                     bg: '#def7ec',
