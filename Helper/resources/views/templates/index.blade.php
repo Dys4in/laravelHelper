@@ -12,7 +12,7 @@
         @if ($isAdmin)
           Plantillas de todas las áreas. Úsalas para crear documentos o adminístralas.
         @elseif ($canManage)
-          Plantillas del área {{ $me->area?->name }}. Sube las que tu equipo necesita y actívalas o desactívalas cuando quieras.
+          Plantillas de tus áreas asignadas. Sube las que tu equipo necesita y actívalas o desactívalas cuando quieras.
         @else
           Elige una plantilla de tu área para crear un documento. Se crea una copia: la plantilla original no cambia.
         @endif
@@ -32,11 +32,11 @@
   </section>
 
   {{-- Buscador y, al otro lado, "Subir plantilla" --}}
-  <section class="flex flex-wrap items-start justify-between gap-3">
+  <section class="hp-toolbar justify-between">
     <form method="GET" action="{{ route('templates.index') }}" data-autosubmit class="flex flex-1 flex-wrap items-center gap-3">
       <div class="hp-search hp-search--block">
         <i class="bi bi-search" aria-hidden="true"></i>
-        <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar plantilla..." aria-label="Buscar plantillas" autocomplete="off" class="h-11 px-4 rounded-xl">
+        <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar plantilla..." aria-label="Buscar plantillas" autocomplete="off">
       </div>
     </form>
 
@@ -87,8 +87,8 @@
 
           @if ($manage)
             <div class="hp-card-foot">
-              <a href="{{ route('templates.download', $t) }}" class="hp-btn-outline"><i class="bi bi-download" aria-hidden="true"></i> Descargar</a>
-              <a href="{{ route('templates.edit', $t) }}" class="hp-btn-outline"><i class="bi bi-pencil" aria-hidden="true"></i> Editar</a>
+              <a href="{{ route('templates.download', $t) }}" class="hp-btn-outline"><i class="bi bi-download" aria-hidden="true"></i> Descargar PDF</a>
+              <button type="button" class="hp-btn-outline" data-modal-open="edit-template-{{ $t->id }}"><i class="bi bi-pencil" aria-hidden="true"></i> Editar</button>
 
               <form method="POST" action="{{ route('templates.status', $t) }}"
                     data-confirm="{{ $t->isActive() ? 'Los usuarios dejarán de ver «'.$t->name.'» al crear documentos. Los documentos ya creados no se afectan.' : 'Los usuarios podrán volver a elegir «'.$t->name.'».' }}"
@@ -147,7 +147,7 @@
                class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand @error('title') !border-red-400 @enderror">
       </div>
 
-      @if ($isAdmin)
+      @if ($isAdmin || $me->hasRole('mod'))
         <div>
           <label for="use_area" class="block text-sm font-medium text-gray-700">Área del documento *</label>
           <select id="use_area" name="area_id" required data-fill="area_id"
@@ -175,7 +175,7 @@
       <form method="POST" action="{{ route('templates.store') }}" enctype="multipart/form-data" class="space-y-5">
         @csrf
         <input type="hidden" name="_modal" value="upload-template">
-        @include('templates._form', ['template' => $newTemplate, 'areas' => $formAreas])
+        @include('templates._form', ['template' => $newTemplate, 'areas' => $formAreas, 'modalId' => 'upload-template'])
 
         <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
           <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>
@@ -184,4 +184,28 @@
       </form>
     </x-app-modal>
   @endif
+
+  {{-- ================= Ventanas: Editar plantilla ================= --}}
+  @foreach ($templates as $t)
+    @php
+      $manageTemplate = $me->can('manage', $t);
+      $editModal = 'edit-template-'.$t->id;
+      $templateAreas = $formAreas->concat($t->area ? [$t->area] : [])->unique('id')->sortBy('name')->values();
+    @endphp
+    @continue(! $manageTemplate)
+
+    <x-app-modal :id="$editModal" title="Editar plantilla" description="Cambia los datos de «{{ $t->name }}» o reemplaza el archivo .docx." size="lg">
+      <form method="POST" action="{{ route('templates.update', $t) }}" enctype="multipart/form-data" class="space-y-5">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="_modal" value="{{ $editModal }}">
+        @include('templates._form', ['template' => $t, 'areas' => $templateAreas, 'modalId' => $editModal])
+
+        <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
+          <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>
+          <button type="submit" class="hp-btn-outline">Guardar cambios</button>
+        </div>
+      </form>
+    </x-app-modal>
+  @endforeach
 </x-panel-layout>

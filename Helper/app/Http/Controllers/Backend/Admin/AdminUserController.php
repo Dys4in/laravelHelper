@@ -19,22 +19,20 @@ class AdminUserController extends Controller
         $search = trim((string) $request->input('q'));
 
         $users = User::query()
-            ->with('area')
+            ->with(['area', 'areas'])
             ->when($search !== '', function ($query) use ($search) {
                 // La abreviatura se calcula en PHP, así que resolvemos los IDs que coinciden.
-                $abbreviationIds = User::query()
-                    ->get(['id', 'name'])
+                $abbreviationIds = User::query()->select(['id', 'name'])->cursor()
                     ->filter(fn (User $user) => Str::contains(Str::lower($user->short_name), Str::lower($search)))
                     ->pluck('id');
 
                 $query->where(function ($w) use ($search, $abbreviationIds) {
                     $w->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('username', 'like', "%{$search}%")
                         ->when($abbreviationIds->isNotEmpty(), fn ($q) => $q->orWhereIn('id', $abbreviationIds));
                 });
             })
-            ->when($request->filled('area'), fn ($q) => $q->where('area_id', $request->integer('area')))
+            ->when($request->filled('area'), fn ($q) => $q->where(fn ($w) => $w->where('area_id', $request->integer('area'))->orWhereHas('areas', fn ($a) => $a->where('areas.id', $request->integer('area')))))
             ->when($request->filled('role'), fn ($q) => $q->where('role', $request->input('role')))
             ->orderBy('name')
             ->paginate(15)
@@ -52,7 +50,14 @@ class AdminUserController extends Controller
 
     public function store(UserRequest $request): RedirectResponse
     {
-        User::create($request->validated());
+        $data = $request->validated();
+        $isMod = $data['role'] === UserRole::Mod->value;
+        $areaIds = array_values(array_unique(array_map('intval', $data['area_ids'] ?? [])));
+        unset($data['area_ids']);
+        $data['area_id'] = $isMod ? ($areaIds[0] ?? null) : ($data['area_id'] ?? null);
+
+        $user = User::create($data);
+        $user->areas()->sync($isMod ? $areaIds : []);
 
         return redirect()->route('admin.users.index')->with('status', 'Usuario creado correctamente.');
     }
@@ -63,7 +68,7 @@ class AdminUserController extends Controller
             'user' => $user,
             // Áreas activas + la actual del usuario (aunque esté suspendida) para no perderla al guardar.
             'areas' => Area::query()
-                ->where(fn ($q) => $q->where('status', Area::ACTIVE)->orWhere('id', $user->area_id))
+                ->where(fn ($q) => $q->where('status', Area::ACTIVE)->orWhere('id', $user->area_id)->orWhereIn('id', $user->areas->pluck('id')))
                 ->orderBy('name')
                 ->get(),
             'roles' => UserRole::cases(),
@@ -73,6 +78,10 @@ class AdminUserController extends Controller
     public function update(UserRequest $request, User $user): RedirectResponse
     {
         $data = $request->validated();
+        $isMod = $data['role'] === UserRole::Mod->value;
+        $areaIds = array_values(array_unique(array_map('intval', $data['area_ids'] ?? [])));
+        unset($data['area_ids']);
+        $data['area_id'] = $isMod ? ($areaIds[0] ?? null) : ($data['area_id'] ?? null);
 
         // Un admin no puede quitarse su propio rol ni desactivarse (evita quedarse sin acceso).
         if ($user->is($request->user()) && ($data['role'] !== UserRole::Admin->value || $data['status'] !== 'active')) {
@@ -85,6 +94,7 @@ class AdminUserController extends Controller
         }
 
         $user->update($data);
+        $user->areas()->sync($isMod ? $areaIds : []);
 
         return redirect()->route('admin.users.index')->with('status', 'Usuario actualizado correctamente.');
     }

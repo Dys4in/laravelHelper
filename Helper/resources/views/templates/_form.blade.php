@@ -28,7 +28,7 @@
     @if ($e = $err('description'))<p class="hp-error">{{ $e }}</p>@endif
   </div>
 
-  @if ($me->isAdmin())
+  @if ($me->isAdmin() || $me->hasRole('mod'))
     <div>
       <label for="{{ $p }}area_id" class="hp-label">Asignar al área *</label>
       <select id="{{ $p }}area_id" name="area_id" required class="hp-select" @if ($err('area_id')) aria-invalid="true" @endif>

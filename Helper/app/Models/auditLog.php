@@ -40,7 +40,7 @@ class AuditLog extends Model
     ];
 
     private const FIELDS = [
-        'name' => 'Nombre', 'username' => 'Usuario', 'email' => 'Correo', 'phone' => 'Teléfono',
+        'name' => 'Nombre', 'email' => 'Correo', 'phone' => 'Teléfono',
         'role' => 'Rol', 'status' => 'Estado', 'area_id' => 'Área', 'description' => 'Descripción',
         'title' => 'Título', 'original_name' => 'Archivo', 'file_size' => 'Tamaño',
         'template_id' => 'Plantilla', 'password' => 'Contraseña',

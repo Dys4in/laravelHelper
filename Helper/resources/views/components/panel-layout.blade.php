@@ -3,6 +3,10 @@
 @php
   $authUser = auth()->user();
   $isAdmin = $authUser->isAdmin();
+  $ownedDocuments = \App\Models\Document::countOwnedBy($authUser);
+  $documentLimit = \App\Models\Document::MAX_PER_USER;
+  $limitReached = $ownedDocuments >= $documentLimit;
+  $usedPercent = min(100, (int) round($ownedDocuments / $documentLimit * 100));
 @endphp
 <!DOCTYPE html>
 <html lang="es">
@@ -14,7 +18,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="{{ asset('backend/assets/vendors/bootstrap-icons/bootstrap-icons.css') }}">
   <link rel="icon" type="image/png" href="{{ asset('backend/assets/images/favicon/faviconHelper.png') }}">
 
@@ -75,6 +79,27 @@
           <i class="bi bi-person" aria-hidden="true"></i><span>Perfil</span>
         </a>
       </nav>
+
+      <div class="hp-workspace">
+        <div class="flex items-baseline justify-between gap-2">
+          <p class="hp-workspace-title">Espacio personal</p>
+          <span class="hp-workspace-meta">{{ $ownedDocuments }}/{{ $documentLimit }}</span>
+        </div>
+
+        <div class="hp-progress" role="progressbar"
+             aria-label="Documentos usados"
+             aria-valuemin="0" aria-valuemax="{{ $documentLimit }}" aria-valuenow="{{ $ownedDocuments }}">
+          <div class="hp-progress-bar {{ $limitReached ? 'is-full' : '' }}" style="width: {{ $usedPercent }}%"></div>
+        </div>
+
+        <p class="hp-workspace-meta {{ $limitReached ? 'text-red-300' : '' }}">
+          @if ($limitReached)
+            Llegaste al límite. Elimina un documento para crear otro.
+          @else
+            {{ $documentLimit - $ownedDocuments }} documentos disponibles.
+          @endif
+        </p>
+      </div>
     </aside>
 
     {{-- ============ MAIN ============ --}}

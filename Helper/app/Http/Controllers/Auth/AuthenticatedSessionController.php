@@ -31,6 +31,7 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
+        $request->session()->put('helper_last_activity', time());
 
         // "Recordarme": se guarda el correo (nunca la contraseña) para precargarlo la próxima vez.
         if ($request->boolean('remember')) {

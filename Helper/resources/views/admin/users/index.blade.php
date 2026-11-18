@@ -10,29 +10,29 @@
   </section>
 
   {{-- Filtros --}}
-  <form method="GET" action="{{ route('admin.users.index') }}" class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
+  <form method="GET" action="{{ route('admin.users.index') }}" class="hp-filterbar">
     <div class="hp-search" role="search">
       <i class="bi bi-search" aria-hidden="true"></i>
-      <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar por nombre, abreviatura, correo o usuario" class="h-11 px-4 rounded-xl max-w-full"
+      <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar por nombre, abreviatura, correo o usuario"
              aria-label="Buscar usuarios" autocomplete="off">
     </div>
 
-    <select name="area" onchange="this.form.submit()" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
+    <select name="area" onchange="this.form.submit()" class="hp-select">
       <option value="">Todas las áreas</option>
       @foreach ($areas as $area)
         <option value="{{ $area->id }}" @selected(request('area') == $area->id)>{{ $area->name }}{{ $area->trashed() ? ' (eliminada)' : '' }}</option>
       @endforeach
     </select>
 
-    <select name="role" onchange="this.form.submit()" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
+    <select name="role" onchange="this.form.submit()" class="hp-select">
       <option value="">Todos los roles</option>
       @foreach ($roles as $role)
         <option value="{{ $role->value }}" @selected(request('role') === $role->value)>{{ $role->label() }}</option>
       @endforeach
     </select>
 
-    <div class="flex gap-2">
-      <a href="{{ route('admin.users.index') }}" class="hp-btn-outline flex-1">Limpiar</a>
+    <div class="hp-filter-clear">
+      <a href="{{ route('admin.users.index') }}" class="hp-btn-outline">Limpiar</a>
     </div>
   </form>
 
@@ -59,7 +59,9 @@
               <span class="inline-flex rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">{{ $u->role->label() }}</span>
             </td>
             <td class="px-4 py-3 text-gray-700">
-              @if ($u->area)
+              @if ($u->hasRole('mod') && $u->areas->isNotEmpty())
+                {{ $u->areas->pluck('name')->implode(', ') }}
+              @elseif ($u->area)
                 {{ $u->area->name }}
                 @if ($u->area->trashed())
                   <span class="text-xs text-red-600">(eliminada)</span>
@@ -79,7 +81,7 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex items-center justify-end gap-2">
-                <a href="{{ route('admin.users.edit', $u) }}" class="hp-btn-outline px-3 py-1.5 text-xs font-medium ">Editar</a>
+                <button type="button" class="hp-btn-outline px-3 py-1.5 text-xs font-medium" data-modal-open="edit-user-{{ $u->id }}">Editar</button>
 
                 @unless ($u->is(auth()->user()))
                   <form method="POST" action="{{ route('admin.users.status', $u) }}"
@@ -111,7 +113,7 @@
     <form method="POST" action="{{ route('admin.users.store') }}" class="space-y-6" autocomplete="off">
       @csrf
       <input type="hidden" name="_modal" value="create-user">
-      @include('admin.users._form', ['user' => $newUser, 'areas' => $formAreas, 'roles' => $roles])
+      @include('admin.users._form', ['user' => $newUser, 'areas' => $formAreas, 'roles' => $roles, 'modalId' => 'create-user'])
 
       <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
         <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>
@@ -119,4 +121,25 @@
       </div>
     </form>
   </x-app-modal>
+
+  {{-- Ventanas: Editar usuario --}}
+  @foreach ($users as $u)
+    @php
+      $editModal = 'edit-user-'.$u->id;
+      $userAreas = $formAreas->concat($u->areas)->concat($u->area ? [$u->area] : [])->unique('id')->sortBy('name')->values();
+    @endphp
+    <x-app-modal :id="$editModal" title="Editar usuario" description="Actualiza los datos, el rol o el área de {{ $u->name }}." size="xl">
+      <form method="POST" action="{{ route('admin.users.update', $u) }}" class="space-y-6" autocomplete="off">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="_modal" value="{{ $editModal }}">
+        @include('admin.users._form', ['user' => $u, 'areas' => $userAreas, 'roles' => $roles, 'modalId' => $editModal])
+
+        <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
+          <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>
+          <button type="submit" class="hp-btn-outline">Guardar cambios</button>
+        </div>
+      </form>
+    </x-app-modal>
+  @endforeach
 </x-admin-layout>

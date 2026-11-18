@@ -61,7 +61,7 @@ class TemplateController extends Controller
                 'inactive' => (int) ($counts[Template::INACTIVE] ?? 0),
             ],
             // Áreas donde se puede subir una plantilla / crear un documento
-            'formAreas' => $user->isAdmin() ? Area::active()->orderBy('name')->get() : collect(),
+            'formAreas' => $user->isAdmin() ? Area::active()->orderBy('name')->get() : ($user->hasRole('mod') ? Area::whereIn('id', $user->assignedAreaIds())->orderBy('name')->get() : collect()),
             'newTemplate' => new Template(['status' => Template::ACTIVE]),
         ]);
     }
@@ -73,6 +73,9 @@ class TemplateController extends Controller
         $user = $request->user();
         $data = $request->validated();
         $file = $request->file('file');
+        if ($user->hasRole('mod') && ! $user->canManageArea((int) ($data['area_id'] ?? 0))) {
+            return back()->withInput()->with('error', 'No tienes permiso para subir plantillas en esa área.');
+        }
 
         $size = $file->getSize();
         $originalName = $file->getClientOriginalName();
@@ -82,7 +85,7 @@ class TemplateController extends Controller
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
             // El moderador siempre sube a su área, aunque manipule el formulario.
-            'area_id' => $user->isAdmin() ? ($data['area_id'] ?? null) : $user->area_id,
+            'area_id' => $data['area_id'] ?? null,
             'status' => $data['status'] ?? Template::ACTIVE,
             'file_path' => $path,
             'original_name' => Str::limit($originalName, 250, ''),
@@ -102,6 +105,7 @@ class TemplateController extends Controller
             // áreas activas + la actual de la plantilla (aunque esté suspendida)
             'areas' => Area::query()
                 ->where(fn ($q) => $q->where('status', Area::ACTIVE)->orWhere('id', $template->area_id))
+                ->when(! auth()->user()->isAdmin(), fn ($q) => $q->whereIn('id', auth()->user()->assignedAreaIds()))
                 ->orderBy('name')
                 ->get(),
         ]);
@@ -114,11 +118,15 @@ class TemplateController extends Controller
         $user = $request->user();
         $data = $request->validated();
 
+        if ($user->hasRole('mod') && ! $user->canManageArea((int) ($data['area_id'] ?? 0))) {
+            return back()->withInput()->with('error', 'No tienes permiso para usar esa área.');
+        }
+
         $attributes = [
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
             // Solo el admin puede mover una plantilla de área o hacerla general.
-            'area_id' => $user->isAdmin() ? ($data['area_id'] ?? null) : $template->area_id,
+            'area_id' => $data['area_id'] ?? $template->area_id,
             'status' => $data['status'] ?? $template->status,
         ];
 
@@ -163,14 +171,29 @@ class TemplateController extends Controller
         return back()->with('status', "La plantilla «{$template->name}» fue eliminada.");
     }
 
-    public function download(Template $template, OnlyOfficeService $oo): StreamedResponse
+    public function download(Template $template, OnlyOfficeService $oo): StreamedResponse|RedirectResponse
     {
         Gate::authorize('manage', $template);
+        abort_unless($oo->disk()->exists($template->file_path), 404);
 
-        abort_unless($oo->disk()->exists($template->file_path), 404, 'El archivo de la plantilla no existe en el servidor.');
+        try {
+            $tmp = $oo->convertToPdf($template);
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->with('error', 'No se pudo convertir la plantilla a PDF. Verifica el servicio OnlyOffice.');
+        }
 
-        AuditLogger::log('template.downloaded', "Descargó la plantilla «{$template->name}»", $template);
-
-        return $oo->disk()->download($template->file_path, (Str::slug($template->name) ?: 'plantilla').'.docx');
+        AuditLogger::log('template.downloaded', "Descargó la plantilla «{$template->name}» en PDF", $template);
+        return response()->streamDownload(function () use ($tmp) {
+            try {
+                $stream = fopen($tmp, 'rb');
+                if (is_resource($stream)) {
+                    fpassthru($stream);
+                    fclose($stream);
+                }
+            } finally {
+                @unlink($tmp);
+            }
+        }, (Str::slug($template->name) ?: 'plantilla').'.pdf', ['Content-Type' => 'application/pdf']);
     }
 }

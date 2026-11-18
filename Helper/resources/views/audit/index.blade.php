@@ -16,46 +16,49 @@
   </section>
 
   {{-- Filtros --}}
-  <form method="GET" action="{{ route('audit.index') }}" data-autosubmit class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-4">
-    <div class="hp-search sm:col-span-2" role="search">
-      <i class="bi bi-search" aria-hidden="true"></i>
-      <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Buscar por el usuario, detalle o area..."class="h-11 px-4 rounded-xl"
-             aria-label="Buscar en el registro de auditoría" autocomplete="off">
+  <form method="GET" action="{{ route('audit.index') }}" data-autosubmit class="hp-filterbar hp-filterbar--audit">
+    <div class="hp-filter-row hp-filter-row--top">
+      <div class="hp-search" role="search">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="search" name="q" value="{{ $filters['q'] }}" placeholder="Buscar por el usuario, detalle o área..."
+               aria-label="Buscar en el registro de auditoría" autocomplete="off">
+      </div>
+
+      <select name="module" class="hp-select">
+        <option value="">Todos los módulos</option>
+        @foreach ($modules as $key => $label)
+          <option value="{{ $key }}" @selected($filters['module'] === $key)>{{ $label }}</option>
+        @endforeach
+      </select>
+
+      <select name="user" class="hp-select">
+        <option value="">Todos los usuarios</option>
+        @foreach ($actors as $actor)
+          <option value="{{ $actor->id }}" @selected((string) $filters['user'] === (string) $actor->id)>{{ $actor->name }}</option>
+        @endforeach
+      </select>
     </div>
 
-    <select name="module" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
-      <option value="">Todos los módulos</option>
-      @foreach ($modules as $key => $label)
-        <option value="{{ $key }}" @selected($filters['module'] === $key)>{{ $label }}</option>
-      @endforeach
-    </select>
+    <div class="hp-filter-row hp-filter-row--bottom">
+      <select name="area" class="hp-select">
+        <option value="">Todas las áreas</option>
+        @foreach ($areas as $area)
+          <option value="{{ $area->id }}" @selected((string) $filters['area'] === (string) $area->id)>{{ $area->name }}</option>
+        @endforeach
+      </select>
 
-    <select name="user" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
-      <option value="">Todos los usuarios</option>
-      @foreach ($actors as $actor)
-        <option value="{{ $actor->id }}" @selected((string) $filters['user'] === (string) $actor->id)>{{ $actor->name }}</option>
-      @endforeach
-    </select>
+      <div class="hp-filter-dates">
+        <label for="from" class="text-xs font-medium text-gray-500">Desde</label>
+        <input id="from" type="date" name="from" value="{{ $filters['from'] }}" class="hp-input min-w-0 flex-1">
+      </div>
+      <div class="hp-filter-dates">
+        <label for="to" class="text-xs font-medium text-gray-500">Hasta</label>
+        <input id="to" type="date" name="to" value="{{ $filters['to'] }}" class="hp-input min-w-0 flex-1">
+      </div>
 
-    <select name="area" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
-      <option value="">Todas las áreas</option>
-      @foreach ($areas as $area)
-        <option value="{{ $area->id }}" @selected((string) $filters['area'] === (string) $area->id)>{{ $area->name }}</option>
-      @endforeach
-    </select>
-
-    <div class="flex items-center gap-2">
-      <label for="from" class="text-xs font-medium text-gray-500">Desde</label>
-      <input id="from" type="date" name="from" value="{{ $filters['from'] }}" class="min-w-0 flex-1 rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
-    </div>
-    <div class="flex items-center gap-2">
-      <label for="to" class="text-xs font-medium text-gray-500">Hasta</label>
-      <input id="to" type="date" name="to" value="{{ $filters['to'] }}" class="min-w-0 flex-1 rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
-    </div>
-
-    <div class="flex gap-2 sm:col-span-2 lg:col-span-1">
-      
-      <a href="{{ route('audit.index') }}" class="hp-btn-outline flex-1">Limpiar</a>
+      <div class="hp-filter-clear">
+        <a href="{{ route('audit.index') }}" class="hp-btn-outline">Limpiar</a>
+      </div>
     </div>
   </form>
 

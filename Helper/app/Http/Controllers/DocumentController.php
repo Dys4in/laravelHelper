@@ -64,7 +64,7 @@ class DocumentController extends Controller
             'documents' => $documents,
             'areas' => $user->isAdmin() ? Area::orderBy('name')->get() : collect(),
             'authors' => User::query()
-                ->when(! $user->isAdmin(), fn ($q) => $q->where('area_id', $user->area_id ?? 0))
+                ->when(! $user->isAdmin(), fn ($q) => $q->whereIn('area_id', $user->assignedAreaIds() ?: [0]))
                 ->orderBy('name')
                 ->get(['id', 'name']),
         ]);
@@ -83,11 +83,18 @@ class DocumentController extends Controller
 
         $user = $request->user();
 
+        if (Document::limitReachedFor($user)) {
+            return back()->withInput()->with(
+                'error',
+                'Alcanzaste el límite de '.Document::MAX_PER_USER.' documentos. Elimina uno para poder crear otro.',
+            );
+        }
+
         $data = $request->validate([
             'template_id' => ['required', 'integer'],
             'title' => ['required', 'string', 'max:150'],
             // El admin no tiene área propia: elige en cuál se crea el documento.
-            'area_id' => [Rule::requiredIf($user->isAdmin()), 'nullable', Rule::exists('areas', 'id')->whereNull('deleted_at')],
+            'area_id' => [Rule::requiredIf($user->isAdmin() || $user->hasRole('mod')), 'nullable', Rule::exists('areas', 'id')->whereNull('deleted_at')],
         ], [
             'template_id.required' => 'Elige una plantilla.',
             'title.required' => 'Escribe un título para el documento.',
@@ -106,7 +113,10 @@ class DocumentController extends Controller
             return back()->withInput()->with('error', 'El archivo de la plantilla no se encontró en el servidor. Avisa al moderador de tu área.');
         }
 
-        $areaId = $user->isAdmin() ? (int) $data['area_id'] : $user->area_id;
+        $areaId = ($user->isAdmin() || $user->hasRole('mod')) ? (int) $data['area_id'] : $user->area_id;
+        if ($user->hasRole('mod') && ! $user->canManageArea($areaId)) {
+            return back()->withInput()->with('error', 'No tienes permiso para crear documentos en esa área.');
+        }
         $path = 'documents/'.Str::uuid().'.docx';
 
         $disk->copy($template->file_path, $path);
@@ -187,7 +197,7 @@ class DocumentController extends Controller
     }
 
     /** Completar / reabrir: moderador (de su área) y administrador. */
-    public function toggleStatus(Request $request, Document $document): RedirectResponse
+    public function toggleStatus(Request $request, Document $document, OnlyOfficeService $oo): RedirectResponse
     {
         Gate::authorize('changeStatus', $document);
 
@@ -199,12 +209,24 @@ class DocumentController extends Controller
 
         $document->update(['status' => $target]);
 
+        // Al reabrir puede volver a editarse: el PDF en caché deja de ser válido.
+        if ($target === Document::DRAFT) {
+            $oo->forgetPdf($document);
+        } else {
+            // Se deja el PDF listo desde ya para que la primera descarga sea instantánea.
+            try {
+                $oo->ensurePdf($document);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
         return back()->with('status', $document->isCompleted()
             ? "«{$document->title}» se marcó como completado: ya se puede descargar y los usuarios no pueden editarlo."
             : "«{$document->title}» volvió a borrador: los usuarios pueden editarlo de nuevo y no se puede descargar.");
     }
 
-    /** Descarga: solo documentos completados (el admin siempre). */
+    /** Descarga: solo documentos completados (el admin siempre). Los completados salen en PDF. */
     public function download(Document $document, OnlyOfficeService $oo): StreamedResponse|RedirectResponse
     {
         Gate::authorize('view', $document);
@@ -215,9 +237,26 @@ class DocumentController extends Controller
 
         abort_unless($document->file_path && $oo->disk()->exists($document->file_path), 404);
 
-        AuditLogger::log('document.downloaded', "Descargó el documento «{$document->title}»", $document);
+        $filename = (Str::slug($document->title) ?: 'documento');
 
-        return $oo->disk()->download($document->file_path, (Str::slug($document->title) ?: 'documento').'.docx');
+        try {
+            $pdfPath = $oo->ensurePdf($document);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', 'No se pudo generar el PDF: '.$e->getMessage());
+        }
+
+        AuditLogger::log('document.downloaded', "Descargó el documento «{$document->title}» en PDF", $document);
+
+        return response()->streamDownload(function () use ($oo, $pdfPath) {
+            $stream = $oo->disk()->readStream($pdfPath);
+
+            if (is_resource($stream)) {
+                fpassthru($stream);
+                fclose($stream);
+            }
+        }, $filename.'.pdf', ['Content-Type' => 'application/pdf']);
     }
 
     /** Eliminar: el dueño mientras esté en borrador; el admin siempre. */

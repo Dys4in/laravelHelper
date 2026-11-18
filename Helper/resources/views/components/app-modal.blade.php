@@ -29,13 +29,14 @@
         'xl' => 'max-w-3xl',
         default => 'max-w-2xl',
     };
+    $panelRadius = str_starts_with($id, 'create-user') || str_starts_with($id, 'edit-user-') ? 'rounded-xl' : 'rounded-2xl';
 @endphp
 
 <div id="modal-{{ $id }}" class="fixed inset-0 z-[90] hidden" role="dialog" aria-modal="true" aria-labelledby="modal-{{ $id }}-title" data-app-modal>
   <div class="absolute inset-0 bg-gray-900/40 opacity-0 transition-opacity duration-200 motion-reduce:transition-none" data-modal-backdrop></div>
 
   <div class="relative flex min-h-full items-center justify-center p-4">
-    <div class="w-full {{ $width }} translate-y-2 scale-95 rounded-2xl bg-white opacity-0 shadow-xl ring-1 ring-black/5 transition duration-200 motion-reduce:transition-none" data-modal-panel>
+    <div class="w-full {{ $width }} translate-y-2 scale-95 {{ $panelRadius }} bg-white opacity-0 shadow-xl ring-1 ring-black/5 transition duration-200 motion-reduce:transition-none" data-modal-panel>
       <div class="flex items-start justify-between gap-4 px-6 pb-2 pt-6">
         <div class="min-w-0">
           <h2 id="modal-{{ $id }}-title" class="text-lg font-bold text-gray-900">{{ $title }}</h2>
@@ -149,7 +150,7 @@
     }
 
     if (e.key === 'Tab' && box) {                       // el foco no se escapa de la ventana
-      var items = Array.prototype.filter.call(box.querySelectorAll(FOCUSABLE), function (n) { return n.offsetParent !== null; });
+      var items = Array.prototype.filter.call(box.querySelectorAll(FOCUSABLE), function (n) { return n.offsetParent !== null && !n.closest('[aria-hidden="true"]'); });
       if (!items.length) return;
       var first = items[0], last = items[items.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }

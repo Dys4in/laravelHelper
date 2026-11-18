@@ -20,12 +20,12 @@ class TemplatePolicy
 
     public function create(User $user): bool
     {
-        return $user->isAdmin() || ($user->hasRole('mod') && $user->area_id !== null);
+        return $user->isAdmin() || ($user->hasRole('mod') && count($user->assignedAreaIds()) > 0);
     }
 
     public function manage(User $user, Template $template): bool
     {
         return $user->isAdmin()
-            || ($user->hasRole('mod') && $user->area_id !== null && $template->area_id === $user->area_id);
+            || $user->canManageArea($template->area_id);
     }
 }

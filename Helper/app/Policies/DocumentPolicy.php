@@ -19,7 +19,7 @@ class DocumentPolicy
     /** Cualquiera con acceso a la app puede crear documentos (el admin elige el área al crearlo). */
     public function create(User $user): bool
     {
-        return $user->isAdmin() || $user->area_id !== null;
+        return $user->isAdmin() || ($user->hasRole('mod') ? count($user->assignedAreaIds()) > 0 : $user->area_id !== null);
     }
 
     public function view(User $user, Document $document): bool
@@ -28,9 +28,7 @@ class DocumentPolicy
             return true;
         }
 
-        return $user->hasRole('mod')
-            && $user->area_id !== null
-            && $user->area_id === $document->area_id;
+        return $user->canManageArea($document->area_id);
     }
 
     /**
@@ -60,7 +58,7 @@ class DocumentPolicy
     public function changeStatus(User $user, Document $document): bool
     {
         return $user->isAdmin()
-            || ($user->hasRole('mod') && $user->area_id !== null && $user->area_id === $document->area_id);
+            || $user->canManageArea($document->area_id);
     }
 
     public function download(User $user, Document $document): bool

@@ -40,7 +40,12 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         if (! Auth::attempt($this->only('email', 'password'))) {
-            RateLimiter::hit($this->throttleKey());
+            RateLimiter::hit($this->throttleKey(), 30 * 60);
+            if (RateLimiter::attempts($this->throttleKey()) >= 5) {
+                RateLimiter::hit($this->lockKey(), 30 * 60);
+                RateLimiter::clear($this->throttleKey());
+                $this->ensureIsNotRateLimited();
+            }
 
 
             throw ValidationException::withMessages([
@@ -64,7 +69,7 @@ class LoginRequest extends FormRequest
 
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->lockKey(), 1)) {
             return;
         }
 
@@ -72,7 +77,7 @@ class LoginRequest extends FormRequest
 
         AuditLogger::log('auth.lockout', 'Inicio de sesión bloqueado temporalmente por demasiados intentos: '.(string) $this->input('email'), actor: null);
 
-        $seconds = RateLimiter::availableIn($this->throttleKey());
+        $seconds = RateLimiter::availableIn($this->lockKey());
 
         throw ValidationException::withMessages([
             'email' => trans('auth.throttle', [
@@ -80,6 +85,11 @@ class LoginRequest extends FormRequest
                 'minutes' => ceil($seconds / 60),
             ]),
         ]);
+    }
+
+    public function lockKey(): string
+    {
+        return 'auth-lock:'.$this->throttleKey();
     }
 
     public function throttleKey(): string

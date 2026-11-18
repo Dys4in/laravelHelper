@@ -6,7 +6,7 @@
         @if ($isAdmin)
           Supervisión de los documentos de todas las áreas. Un documento se puede descargar cuando se marca como completado.
         @else
-          Supervisión de los documentos de tu área ({{ auth()->user()->area?->name }}). Ábrelos, edítalos y márcalos como completados para que se puedan descargar.
+          Supervisión de los documentos de tus áreas asignadas. Ábrelos, edítalos y márcalos como completados para que se puedan descargar.
         @endif
       </p>
     </div>
@@ -16,27 +16,27 @@
   </section>
 
   {{-- Filtros --}}
-  <form method="GET" action="{{ route('supervision.index') }}" data-autosubmit class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 {{ $isAdmin ? 'lg:grid-cols-5' : 'lg:grid-cols-4' }}">
-    <div class="hp-search sm:col-span-2 lg:col-span-1">
+  <form method="GET" action="{{ route('supervision.index') }}" data-autosubmit class="hp-filterbar">
+    <div class="hp-search">
       <i class="bi bi-search" aria-hidden="true"></i>
-      <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar por código, título o autor..." aria-label="Buscar documentos" autocomplete="off" class="h-11 px-4 rounded-xl">
+      <input type="search" name="q" value="{{ request('q') }}" placeholder="Buscar por código, título o autor..." aria-label="Buscar documentos" autocomplete="off">
     </div>
 
-    <select name="author" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
+    <select name="author" class="hp-select">
       <option value="">Todos los autores</option>
       @foreach ($authors as $author)
         <option value="{{ $author->id }}" @selected(request('author') == $author->id)>{{ $author->name }}</option>
       @endforeach
     </select>
 
-    <select name="status" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
+    <select name="status" class="hp-select">
       <option value="">Todos los estados</option>
       <option value="draft" @selected(request('status') === 'draft')>Borrador</option>
       <option value="completed" @selected(request('status') === 'completed')>Completado</option>
     </select>
 
     @if ($isAdmin)
-      <select name="area" class="rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand">
+      <select name="area" class="hp-select">
         <option value="">Todas las áreas</option>
         @foreach ($areas as $area)
           <option value="{{ $area->id }}" @selected(request('area') == $area->id)>{{ $area->name }}</option>
@@ -44,9 +44,8 @@
       </select>
     @endif
 
-    <div class="flex gap-2">
-
-      <a href="{{ route('supervision.index') }}" class="hp-btn-outline flex-1">Limpiar</a>
+    <div class="hp-filter-clear">
+      <a href="{{ route('supervision.index') }}" class="hp-btn-outline">Limpiar</a>
     </div>
   </form>
 

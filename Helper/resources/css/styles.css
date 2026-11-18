@@ -46,6 +46,7 @@
   .hp-workspace-meta { @apply text-xs text-[#a9abc4]; }
   .hp-progress { @apply h-1.5 w-full overflow-hidden rounded-[3px] bg-ink-line; }
   .hp-progress-bar { @apply h-full bg-brand-light transition-[width] duration-300; }
+  .hp-progress-bar.is-full { @apply bg-red-400; }
   .hp-workspace-link { @apply text-xs font-semibold text-[#b59cff] no-underline hover:underline; }
 
   /* ---------------- Main / Topbar ---------------- */
@@ -66,7 +67,7 @@
   }
 
   .hp-search {
-    @apply flex h-[42px] w-full items-center gap-2 rounded-xl border border-line bg-white px-3.5
+    @apply flex h-10 w-full items-center gap-2 rounded-xl border border-line bg-white px-3.5
            text-[13px] text-gray-400 shadow-card transition
            focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/15;
   }
@@ -156,11 +157,15 @@
   .hp-input,
   .hp-select,
   .hp-textarea {
-    @apply block w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-[13px] text-gray-900 shadow-none
+    @apply block w-full rounded-xl border border-line bg-white px-3.5 text-[13px] text-gray-900 shadow-none
            transition placeholder:text-gray-400
            focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20;
+    border-radius: 0.75rem;
   }
-  .hp-select { @apply cursor-pointer pr-9; }
+  .hp-input { @apply h-[42px] py-0; }
+  .hp-select { @apply cursor-pointer pr-9 py-2.5; }
+  select.hp-select:not([multiple]) { @apply h-[42px] py-0; }
+  .hp-textarea { @apply py-2.5; }
   .hp-input[aria-invalid="true"],
   .hp-select[aria-invalid="true"] { @apply border-red-400 focus:border-red-500 focus:ring-red-200; }
   .hp-file {
@@ -174,7 +179,38 @@
 
   /* Barra de herramientas: buscador + filtros + acción principal */
   .hp-toolbar { @apply flex flex-wrap items-center gap-3; }
-  .hp-filterbar { @apply flex flex-wrap items-end gap-3 rounded-2xl border border-line bg-white p-4 shadow-card; }
+  .hp-filterbar { @apply flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-white p-4 shadow-card; }
+  .hp-filterbar .hp-search,
+  .hp-filterbar .hp-input,
+  .hp-filterbar .hp-select,
+  .hp-filterbar .hp-btn-outline,
+  .hp-toolbar .hp-btn-outline,
+  .hp-toolbar .hp-btn-primary { @apply h-10; }
+  .hp-filterbar .hp-search { @apply w-auto min-w-[240px]; flex: 1 1 320px; }
+  .hp-filterbar .hp-search input { @apply h-full px-0; }
+  .hp-filterbar .hp-select-wrap { @apply w-auto min-w-[180px]; flex: 1 1 230px; }
+  .hp-filterbar > .hp-input { @apply w-auto min-w-[180px]; flex: 1 1 230px; }
+  .hp-filterbar .hp-filter-dates { @apply flex min-w-[190px] items-center gap-2; flex: 1 1 230px; }
+  .hp-filterbar .hp-filter-clear { @apply flex flex-none; }
+  .hp-filterbar .hp-btn-outline { @apply px-4; }
+  @media (max-width: 639px) {
+    .hp-filterbar .hp-search,
+    .hp-filterbar .hp-select-wrap,
+    .hp-filterbar .hp-filter-dates,
+    .hp-filterbar > .hp-input,
+    .hp-filterbar .hp-filter-clear { flex-basis: 100%; }
+    .hp-filterbar .hp-filter-clear .hp-btn-outline { @apply w-full; }
+  }
+  /* Auditoría: dos filas fijas en escritorio con el buscador repartido con los filtros. */
+  .hp-filterbar--audit { display: flex; flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+  .hp-filter-row { @apply flex flex-wrap items-center gap-3; }
+  @media (min-width: 1024px) {
+    .hp-filter-row--top { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .hp-filter-row--bottom { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; }
+    .hp-filterbar--audit .hp-search,
+    .hp-filterbar--audit .hp-select-wrap,
+    .hp-filterbar--audit .hp-filter-dates { width: auto; min-width: 0; }
+  }
   .hp-filter { @apply flex min-w-[150px] flex-1 flex-col; }
   .hp-filter-label { @apply mb-1 text-[11px] font-semibold tracking-wide text-gray-400; }
   /* El buscador del topbar se oculta en móvil; en contenido debe verse siempre */

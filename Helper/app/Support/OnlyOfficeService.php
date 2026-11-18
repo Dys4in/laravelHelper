@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Document;
+use App\Models\Template;
 use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -49,6 +50,15 @@ class OnlyOfficeService
             ['document' => $document->id, 'v' => $document->version],
             absolute: false,
         );
+
+        return config('onlyoffice.storage_url').$path;
+    }
+
+    public function templateFileUrl(Template $template): string
+    {
+        $path = URL::temporarySignedRoute('onlyoffice.template-file',
+            now()->addMinutes(config('onlyoffice.file_url_ttl_minutes')),
+            ['template' => $template->id, 'v' => $template->updated_at?->timestamp], absolute: false);
 
         return config('onlyoffice.storage_url').$path;
     }
@@ -125,6 +135,136 @@ class OnlyOfficeService
         return $config;
     }
 
+    /** Ruta del PDF en disco, única por documento y versión (los completados no cambian). */
+    public function pdfPath(Document $document): string
+    {
+        return 'pdf/'.$document->id.'-v'.$document->version.'.pdf';
+    }
+
+    /**
+     * Devuelve la ruta del PDF en disco; si no existe, lo convierte una sola vez y lo guarda.
+     * Así las siguientes descargas no vuelven a llamar a OnlyOffice.
+     */
+    public function ensurePdf(Document $document): string
+    {
+        $path = $this->pdfPath($document);
+
+        if ($this->disk()->exists($path)) {
+            return $path;
+        }
+
+        $tmp = $this->convertToPdf($document);
+
+        try {
+            $stream = fopen($tmp, 'rb');
+            $this->disk()->put($path, $stream);
+
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        } finally {
+            @unlink($tmp);
+        }
+
+        return $path;
+    }
+
+    /** Borra el PDF en caché (al editar de nuevo el documento o eliminarlo). */
+    public function forgetPdf(Document $document): void
+    {
+        $this->disk()->delete($this->pdfPath($document));
+    }
+
+    /**
+     * Convierte el .docx a PDF con la API de conversión del Document Server.
+     *
+     * @return string Ruta del PDF temporal (hay que borrarlo después de enviarlo).
+     */
+    public function convertToPdf(Document|Template $document): string
+    {
+        $isTemplate = $document instanceof Template;
+        $payload = [
+            'async' => false,
+            'filetype' => 'docx',
+            // Clave determinista: el Document Server reutiliza su caché entre descargas.
+            'key' => $isTemplate ? 'tpl'.$document->id.'v'.$document->updated_at?->timestamp : 'pdf'.$document->id.'v'.$document->version,
+            'outputtype' => 'pdf',
+            'title' => (Str::slug($isTemplate ? $document->name : $document->title) ?: 'documento').'.docx',
+            'url' => $isTemplate ? $this->templateFileUrl($document) : $this->fileUrl($document),
+        ];
+
+        $request = Http::timeout(120)->acceptJson()->asJson();
+
+        if (config('onlyoffice.jwt_enabled')) {
+            $token = Jwt::encode($payload, $this->secret());
+            $payload['token'] = $token;
+            $request = $request->withToken($token);
+        }
+
+        $response = $request->post(config('onlyoffice.url').'/converter', $payload);
+
+        if (! $response->successful()) {
+            throw new RuntimeException("No se pudo conectar con el servicio de conversión (HTTP {$response->status()}).");
+        }
+
+        $data = $response->json();
+
+        if (! is_array($data)) {
+            throw new RuntimeException('El servicio de conversión devolvió una respuesta no válida.');
+        }
+
+        if (isset($data['error'])) {
+            throw new RuntimeException($this->conversionErrorMessage((int) $data['error']));
+        }
+
+        if (($data['endConvert'] ?? false) !== true || empty($data['fileUrl'])) {
+            throw new RuntimeException('La conversión a PDF no terminó correctamente.');
+        }
+
+        $url = (string) $data['fileUrl'];
+        $this->assertAllowedUrl($url);
+
+        $tmp = tempnam(sys_get_temp_dir(), 'pdf_');
+
+        try {
+            $download = Http::timeout(120)->withOptions(['sink' => $tmp])->get($url);
+
+            if (! $download->successful()) {
+                throw new RuntimeException("No se pudo descargar el PDF convertido (HTTP {$download->status()}).");
+            }
+
+            $handle = fopen($tmp, 'rb');
+            $magic = $handle ? fread($handle, 4) : '';
+            if (is_resource($handle)) {
+                fclose($handle);
+            }
+
+            if ($magic !== '%PDF') {
+                throw new RuntimeException('El archivo recibido no es un PDF válido.');
+            }
+        } catch (\Throwable $e) {
+            @unlink($tmp);
+            throw $e;
+        }
+
+        return $tmp;
+    }
+
+    private function conversionErrorMessage(int $code): string
+    {
+        return match ($code) {
+            -1 => 'Error desconocido al convertir el documento.',
+            -2 => 'La conversión tardó demasiado tiempo.',
+            -3 => 'No se pudo convertir el documento a PDF.',
+            -4 => 'No se pudo leer el documento para convertirlo.',
+            -5 => 'El documento está protegido con contraseña.',
+            -6 => 'Error del servicio de conversión al acceder al resultado.',
+            -7 => 'La petición de conversión no es válida.',
+            -8 => 'El token de conversión no es válido.',
+            default => "No se pudo convertir el documento a PDF (código {$code}).",
+        };
+    }
+
     /**
      * Devuelve el contenido VERIFICADO del callback.
      * Con JWT activo se usa lo que va dentro del token, no el cuerpo sin firmar.
@@ -185,12 +325,17 @@ class OnlyOfficeService
             @unlink($tmp);
         }
 
+        $previousVersion = $document->version;
+
         $document->forceFill([
-            'version' => $document->version + 1,
+            'version' => $previousVersion + 1,
             'doc_key' => $closeSession ? self::newKey() : $document->doc_key,
             'last_saved_at' => now(),
             'updated_by' => ($userId && User::whereKey($userId)->exists()) ? $userId : $document->updated_by,
         ])->save();
+
+        // El PDF de la versión anterior ya no corresponde al contenido guardado.
+        $this->disk()->delete('pdf/'.$document->id.'-v'.$previousVersion.'.pdf');
 
         // El callback no tiene sesión: el autor es el último usuario que editó, según OnlyOffice.
         AuditLogger::log(

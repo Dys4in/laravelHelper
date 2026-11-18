@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -25,7 +26,6 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
-        'username',
         'phone',
         'email',
         'password',
@@ -52,6 +52,28 @@ class User extends Authenticatable
     {
         // withTrashed: un usuario sigue mostrando su área aunque esta se haya eliminado
         return $this->belongsTo(Area::class)->withTrashed();
+    }
+
+    /** Áreas adicionales que puede supervisar un moderador. */
+    public function areas(): BelongsToMany
+    {
+        return $this->belongsToMany(Area::class)->withTrashed();
+    }
+
+    public function assignedAreaIds(): array
+    {
+        if (! $this->hasRole('mod')) {
+            return $this->area_id ? [(int) $this->area_id] : [];
+        }
+
+        return $this->areas()->where('status', Area::ACTIVE)->whereNull('areas.deleted_at')
+            ->pluck('areas.id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    public function canManageArea(?int $areaId): bool
+    {
+        return $areaId !== null && $this->hasRole('mod')
+            && in_array($areaId, $this->assignedAreaIds(), true);
     }
 
     public function hasRole(string|UserRole ...$roles): bool
@@ -117,9 +139,12 @@ class User extends Authenticatable
             return 'Tu cuenta está desactivada. Contacta al administrador.';
         }
 
-        if (! $this->isAdmin()) {
+        if ($this->hasRole('mod')) {
+            if (count($this->assignedAreaIds()) === 0) {
+                return 'No tienes áreas activas asignadas. Contacta al administrador.';
+            }
+        } elseif (! $this->isAdmin()) {
             $area = $this->area;
-
             if (! $area || $area->trashed() || ! $area->isActive()) {
                 return 'Tu área está suspendida o no tienes un área asignada. Contacta al administrador.';
             }

@@ -39,7 +39,7 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex items-center justify-end gap-2">
-                <a href="{{ route('admin.areas.edit', $area) }}" class="hp-btn-outline px-3 py-1.5 text-xs font-medium ">Editar</a>
+                <button type="button" class="hp-btn-outline px-3 py-1.5 text-xs font-medium" data-modal-open="edit-area-{{ $area->id }}">Editar</button>
 
                 <form method="POST" action="{{ route('admin.areas.status', $area) }}"
                       data-confirm="{{ $area->isActive() ? 'Los '.$area->users_count.' usuario(s) de «'.$area->name.'» no podrán iniciar sesión mientras esté suspendida.' : 'Los usuarios de «'.$area->name.'» volverán a poder iniciar sesión.' }}"
@@ -87,7 +87,7 @@
           @if ($areaOpen && $errors->has('name'))<p class="hp-error">{{ $errors->first('name') }}</p>@endif
         </div>
         <div>
-          <label for="area-create-description" class="hp-label">Abreviatura</label>
+          <label for="area-create-description" class="hp-label">Firma</label>
           <input id="area-create-description" name="description" type="text" value="{{ $areaOpen ? old('description') : '' }}" maxlength="255" class="hp-input">
           @if ($areaOpen && $errors->has('description'))<p class="hp-error">{{ $errors->first('description') }}</p>@endif
         </div>
@@ -99,4 +99,38 @@
       </div>
     </form>
   </x-hp-modal>
+
+  {{-- ============ Ventanas: Editar área ============ --}}
+  @foreach ($areas as $area)
+    @php
+      $editModal = 'edit-area-'.$area->id;
+      $mine = old('_modal') === $editModal;
+    @endphp
+    <x-hp-modal :id="$editModal" title="Editar área" subtitle="Cambia el nombre o la firma del área."
+                icon="bi-diagram-3" :open="$mine">
+      <form method="POST" action="{{ route('admin.areas.update', $area) }}">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="_modal" value="{{ $editModal }}">
+
+        <div class="hp-modal-body">
+          <div>
+            <label for="{{ $editModal }}-name" class="hp-label">Nombre del área</label>
+            <input id="{{ $editModal }}-name" name="name" type="text" value="{{ $mine ? old('name', $area->name) : $area->name }}" required maxlength="100" class="hp-input" @if ($mine && $errors->has('name')) aria-invalid="true" @endif>
+            @if ($mine && $errors->has('name'))<p class="hp-error">{{ $errors->first('name') }}</p>@endif
+          </div>
+          <div>
+            <label for="{{ $editModal }}-description" class="hp-label">Firma</label>
+            <input id="{{ $editModal }}-description" name="description" type="text" value="{{ $mine ? old('description', $area->description) : $area->description }}" maxlength="255" class="hp-input">
+            @if ($mine && $errors->has('description'))<p class="hp-error">{{ $errors->first('description') }}</p>@endif
+          </div>
+        </div>
+
+        <div class="hp-modal-foot">
+          <button type="button" class="hp-btn-outline" data-modal-close>Cancelar</button>
+          <button type="submit" class="hp-btn-outline">Guardar cambios</button>
+        </div>
+      </form>
+    </x-hp-modal>
+  @endforeach
 </x-admin-layout>

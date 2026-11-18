@@ -24,7 +24,7 @@ class TemplateRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:255'],
             // El admin debe asignar la plantilla a un área; el moderador siempre usa la suya (se ignora lo que envíe).
             'area_id' => [
-                Rule::requiredIf(fn () => $this->user()?->isAdmin() === true),
+                Rule::requiredIf(fn () => $this->user()?->hasRole('admin', 'mod') === true),
                 'nullable',
                 Rule::exists('areas', 'id')->whereNull('deleted_at'),
             ],

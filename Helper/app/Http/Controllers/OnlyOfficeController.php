@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\Template;
 use App\Support\OnlyOfficeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,18 @@ class OnlyOfficeController extends Controller
         abort_unless($document->file_path && $disk->exists($document->file_path), 404);
 
         return $disk->response($document->file_path, 'document.docx', [
+            'Content-Type' => OnlyOfficeService::DOCX_MIME,
+            'Cache-Control' => 'no-store',
+        ]);
+    }
+
+    /** Entrega privada de plantillas a OnlyOffice mediante URL firmada. */
+    public function templateFile(Request $request, Template $template, OnlyOfficeService $oo): StreamedResponse
+    {
+        abort_unless($request->hasValidRelativeSignature(), 403);
+        abort_unless($template->file_path && $oo->disk()->exists($template->file_path), 404);
+
+        return $oo->disk()->response($template->file_path, 'template.docx', [
             'Content-Type' => OnlyOfficeService::DOCX_MIME,
             'Cache-Control' => 'no-store',
         ]);

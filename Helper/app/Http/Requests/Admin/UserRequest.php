@@ -29,18 +29,20 @@ class UserRequest extends FormRequest
     {
         $user = $this->route('user');
         $isUpdate = $user !== null;
+        $isMod = $this->input('role') === UserRole::Mod->value;
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'username' => ['nullable', 'string', 'max:50', Rule::unique('users', 'username')->ignore($user?->id)],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user?->id)],
             'phone' => ['nullable', 'string', 'max:30'],
             'role' => ['required', Rule::enum(UserRole::class)],
             'area_id' => [
-                Rule::requiredIf(fn () => $this->input('role') !== UserRole::Admin->value),
+                Rule::requiredIf(fn () => ! $isMod),
                 'nullable',
                 Rule::exists('areas', 'id')->whereNull('deleted_at'),
             ],
+            'area_ids' => [Rule::requiredIf(fn () => $isMod), 'nullable', 'array'],
+            'area_ids.*' => ['integer', 'distinct', Rule::exists('areas', 'id')->whereNull('deleted_at')],
             'status' => ['required', Rule::in(['active', 'inactive'])],
             'password' => [$isUpdate ? 'nullable' : 'required', 'confirmed', Password::defaults()],
         ];
@@ -53,10 +55,12 @@ class UserRequest extends FormRequest
             'email.required' => 'El correo es obligatorio.',
             'email.email' => 'Escribe un correo válido.',
             'email.unique' => 'Ya existe un usuario con ese correo.',
-            'username.unique' => 'Ese nombre de usuario ya está en uso.',
             'role.required' => 'Selecciona un rol.',
-            'area_id.required' => 'Asigna un área (solo los administradores pueden quedar sin área).',
+            'area_id.required' => 'Selecciona un área.',
             'area_id.exists' => 'El área seleccionada no existe.',
+            'area_ids.required' => 'Selecciona al menos un área para el moderador.',
+            'area_ids.*.exists' => 'El área seleccionada no existe.',
+            'area_ids.*.distinct' => 'No repitas áreas.',
             'password.required' => 'La contraseña es obligatoria.',
             'password.confirmed' => 'La confirmación de contraseña no coincide.',
         ];

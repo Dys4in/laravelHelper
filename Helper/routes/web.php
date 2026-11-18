@@ -23,7 +23,7 @@ Route::get('/', function () {
 |--------------------------------------------------------------------------
 | 'active' cierra la sesión si el admin desactivó al usuario o su área.
 */
-Route::middleware(['auth', 'active'])->group(function () {
+Route::middleware(['auth', 'idle', 'active'])->group(function () {
     // Punto de entrada único: el admin va a su dashboard; moderador y usuario, a "Mis documentos".
     Route::get('/dashboard', function () {
         return redirect()->route(auth()->user()->role->dashboardRoute());
@@ -57,7 +57,7 @@ Route::middleware(['auth', 'active'])->group(function () {
 |--------------------------------------------------------------------------
 | Moderador = documentos de su área · Administrador = todos.
 */
-Route::middleware(['auth', 'active', 'role:admin,mod'])->group(function () {
+Route::middleware(['auth', 'idle', 'active', 'role:admin,mod'])->group(function () {
     Route::get('/supervision', [DocumentController::class, 'supervision'])->name('supervision.index');
 });
 
@@ -66,7 +66,7 @@ Route::middleware(['auth', 'active', 'role:admin,mod'])->group(function () {
 | Administrador
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'active', 'role:admin'])
+Route::middleware(['auth', 'idle', 'active', 'role:admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -84,11 +84,11 @@ Route::middleware(['auth', 'active', 'role:admin'])
 | URLs antiguas de inicio (se conservan por compatibilidad)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'active', 'role:mod'])->group(function () {
+Route::middleware(['auth', 'idle', 'active', 'role:mod'])->group(function () {
     Route::get('/mod/dashboard', [ModController::class, 'dashboard'])->name('mod.dashboard');
 });
 
-Route::middleware(['auth', 'active', 'role:user'])->group(function () {
+Route::middleware(['auth', 'idle', 'active', 'role:user'])->group(function () {
     Route::get('/user/dashboard', [UserController::class, 'dashboard'])->name('user.dashboard');
 });
 
