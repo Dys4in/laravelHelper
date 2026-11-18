@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Area;
 use App\Models\User;
 
 test('profile page is displayed', function () {
@@ -48,6 +49,15 @@ test('email verification status is unchanged when the email address is unchanged
         ->assertRedirect('/profile');
 
     $this->assertNotNull($user->refresh()->email_verified_at);
+});
+
+test('profile edit with unchanged name is not saved', function () {
+    $area = Area::create(['name' => 'Perfil', 'status' => 'active']);
+    $user = User::factory()->create(['status' => 'active', 'area_id' => $area->id]);
+
+    $this->actingAs($user)->patch('/profile', ['name' => $user->name])
+        ->assertRedirect('/profile')
+        ->assertSessionHas('status', 'profile-unchanged');
 });
 
 test('user can delete their account', function () {

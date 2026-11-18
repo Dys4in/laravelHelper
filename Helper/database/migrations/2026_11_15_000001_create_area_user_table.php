@@ -5,21 +5,35 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
+    /**
+     * Un moderador puede tener varias áreas. users.area_id sigue siendo su área principal
+     * (la que se usa por defecto) y esta tabla guarda TODAS las áreas del moderador.
+     * Para usuarios y administradores no cambia nada: siguen usando solo users.area_id.
+     */
     public function up(): void
     {
         Schema::create('area_user', function (Blueprint $table) {
-            $table->foreignId('area_id')->constrained()->cascadeOnDelete();
+            $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->primary(['area_id', 'user_id']);
+            $table->foreignId('area_id')->constrained('areas')->cascadeOnDelete();
+            $table->timestamps();
+
+            $table->unique(['user_id', 'area_id']);
         });
-        // Conservar las asignaciones existentes durante la actualización.
-        DB::table('users')->where('role', 'mod')->whereNotNull('area_id')
-            ->orderBy('id')->chunk(200, function ($users) {
-                DB::table('area_user')->insert($users->map(fn ($user) => [
-                    'area_id' => $user->area_id, 'user_id' => $user->id,
-                ])->all());
-            });
+
+        // Los moderadores que ya existen conservan su área actual.
+        $now = now();
+
+        DB::table('users')
+            ->where('role', 'mod')
+            ->whereNotNull('area_id')
+            ->orderBy('id')
+            ->get(['id', 'area_id'])
+            ->map(fn ($u) => ['user_id' => $u->id, 'area_id' => $u->area_id, 'created_at' => $now, 'updated_at' => $now])
+            ->chunk(500)
+            ->each(fn ($chunk) => DB::table('area_user')->insert($chunk->all()));
     }
 
     public function down(): void

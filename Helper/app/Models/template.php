@@ -53,14 +53,14 @@ class Template extends Model
         }
 
         return $query->where(function (Builder $q) use ($user) {
-            $q->whereNull('area_id')->orWhereIn('area_id', $user->assignedAreaIds() ?: [0]);
+            $q->whereNull('area_id')->orWhereIn('area_id', $user->areaIds() ?: [0]);
         });
     }
 
     /**
      * Plantillas que el usuario ve en la pantalla "Plantillas".
      *  - Admin: todas.
-     *  - Moderador: las de su área (activas o no, para administrarlas) y las generales activas.
+     *  - Moderador: las de sus áreas (activas o no, para administrarlas) y las generales activas.
      *  - Usuario: solo las activas de su área y las generales.
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder
@@ -71,13 +71,13 @@ class Template extends Model
 
         if ($user->hasRole('mod')) {
             return $query->where(function (Builder $q) use ($user) {
-                $q->whereIn('area_id', $user->assignedAreaIds() ?: [0])
+                $q->whereIn('area_id', $user->areaIds() ?: [0])
                     ->orWhere(fn (Builder $g) => $g->whereNull('area_id')->where('status', self::ACTIVE));
             });
         }
 
         return $query->where('status', self::ACTIVE)->where(function (Builder $q) use ($user) {
-            $q->whereNull('area_id')->orWhereIn('area_id', $user->assignedAreaIds() ?: [0]);
+            $q->whereNull('area_id')->orWhereIn('area_id', $user->areaIds() ?: [0]);
         });
     }
 }

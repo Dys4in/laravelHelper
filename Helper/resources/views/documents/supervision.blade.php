@@ -1,4 +1,7 @@
-@php $isAdmin = auth()->user()->isAdmin(); @endphp
+@php
+  $isAdmin = auth()->user()->isAdmin();
+  $areaNames = $areas->pluck('name')->join(', ');
+@endphp
 <x-panel-layout :title="$isAdmin ? 'Todos los documentos' : 'Documentos del área'">
   <section class="hp-overview">
     <div>
@@ -6,7 +9,7 @@
         @if ($isAdmin)
           Supervisión de los documentos de todas las áreas. Un documento se puede descargar cuando se marca como completado.
         @else
-          Supervisión de los documentos de tus áreas asignadas. Ábrelos, edítalos y márcalos como completados para que se puedan descargar.
+          Supervisión de los documentos de {{ $areas->count() > 1 ? 'tus áreas' : 'tu área' }} ({{ $areaNames }}). Ábrelos, edítalos y márcalos como completados para que se puedan descargar.
         @endif
       </p>
     </div>
@@ -35,7 +38,7 @@
       <option value="completed" @selected(request('status') === 'completed')>Completado</option>
     </select>
 
-    @if ($isAdmin)
+    @if ($isAdmin || $areas->count() > 1)
       <select name="area" class="hp-select">
         <option value="">Todas las áreas</option>
         @foreach ($areas as $area)

@@ -31,9 +31,9 @@
           <div class="flex items-center justify-between gap-4 py-4">
             <dt class="flex items-center gap-2 text-sm text-gray-500">
               <i class="bi bi-diagram-3 text-base text-brand" aria-hidden="true"></i>
-              Área
+              {{ $user->assignedAreas()->count() > 1 ? 'Áreas' : 'Área' }}
             </dt>
-            <dd class="truncate text-sm font-semibold text-gray-900">{{ $user->area?->name ?? 'Sin área' }}</dd>
+            <dd class="truncate text-sm font-semibold text-gray-900">{{ $user->assignedAreas()->pluck('name')->join(', ') ?: 'Sin área' }}</dd>
           </div>
 
           <div class="flex items-center justify-between gap-4 py-4">
@@ -70,6 +70,20 @@
             alert: true,
             title: 'Cambios guardados',
             message: 'Tu información personal se actualizó correctamente.',
+            confirmText: 'Aceptar',
+            variant: 'primary'
+          });
+        }
+      });
+    </script>
+  @elseif (session('status') === 'profile-unchanged')
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.confirmDialog) {
+          confirmDialog({
+            alert: true,
+            title: 'Sin cambios',
+            message: 'No hay cambios para guardar.',
             confirmText: 'Aceptar',
             variant: 'primary'
           });

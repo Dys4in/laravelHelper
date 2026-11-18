@@ -15,7 +15,7 @@
 --}}
 @php
     // Estados que Breeze ya muestra en línea en la página de perfil: no duplicarlos.
-    $skip = ['profile-updated', 'password-updated', 'verification-link-sent'];
+    $skip = ['profile-updated', 'profile-unchanged', 'password-updated', 'verification-link-sent'];
     $queue = [];
 
     $status = session('status');

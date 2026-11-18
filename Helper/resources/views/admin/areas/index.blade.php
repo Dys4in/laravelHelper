@@ -87,7 +87,7 @@
           @if ($areaOpen && $errors->has('name'))<p class="hp-error">{{ $errors->first('name') }}</p>@endif
         </div>
         <div>
-          <label for="area-create-description" class="hp-label">Firma</label>
+          <label for="area-create-description" class="hp-label">Abreviación</label>
           <input id="area-create-description" name="description" type="text" value="{{ $areaOpen ? old('description') : '' }}" maxlength="255" class="hp-input">
           @if ($areaOpen && $errors->has('description'))<p class="hp-error">{{ $errors->first('description') }}</p>@endif
         </div>
@@ -106,7 +106,7 @@
       $editModal = 'edit-area-'.$area->id;
       $mine = old('_modal') === $editModal;
     @endphp
-    <x-hp-modal :id="$editModal" title="Editar área" subtitle="Cambia el nombre o la firma del área."
+    <x-hp-modal :id="$editModal" title="Editar área" subtitle="Cambia el nombre o la abreviación del área."
                 icon="bi-diagram-3" :open="$mine">
       <form method="POST" action="{{ route('admin.areas.update', $area) }}">
         @csrf
@@ -120,7 +120,7 @@
             @if ($mine && $errors->has('name'))<p class="hp-error">{{ $errors->first('name') }}</p>@endif
           </div>
           <div>
-            <label for="{{ $editModal }}-description" class="hp-label">Firma</label>
+            <label for="{{ $editModal }}-description" class="hp-label">Abreviación</label>
             <input id="{{ $editModal }}-description" name="description" type="text" value="{{ $mine ? old('description', $area->description) : $area->description }}" maxlength="255" class="hp-input">
             @if ($mine && $errors->has('description'))<p class="hp-error">{{ $errors->first('description') }}</p>@endif
           </div>

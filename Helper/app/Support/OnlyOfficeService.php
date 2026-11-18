@@ -54,11 +54,15 @@ class OnlyOfficeService
         return config('onlyoffice.storage_url').$path;
     }
 
+    /** Igual que fileUrl(), pero para el archivo de una plantilla (solo se usa para convertirla a PDF). */
     public function templateFileUrl(Template $template): string
     {
-        $path = URL::temporarySignedRoute('onlyoffice.template-file',
+        $path = URL::temporarySignedRoute(
+            'onlyoffice.template',
             now()->addMinutes(config('onlyoffice.file_url_ttl_minutes')),
-            ['template' => $template->id, 'v' => $template->updated_at?->timestamp], absolute: false);
+            ['template' => $template->id, 'f' => substr(sha1((string) $template->file_path), 0, 12)],
+            absolute: false,
+        );
 
         return config('onlyoffice.storage_url').$path;
     }
@@ -180,17 +184,75 @@ class OnlyOfficeService
      *
      * @return string Ruta del PDF temporal (hay que borrarlo después de enviarlo).
      */
-    public function convertToPdf(Document|Template $document): string
+    public function convertToPdf(Document $document): string
     {
-        $isTemplate = $document instanceof Template;
+        return $this->convertUrlToPdf(
+            // Clave determinista: el Document Server reutiliza su caché entre descargas.
+            'pdf'.$document->id.'v'.$document->version,
+            (Str::slug($document->title) ?: 'documento').'.docx',
+            $this->fileUrl($document),
+        );
+    }
+
+    /**
+     * Devuelve la ruta del PDF de la plantilla en disco; si no existe, lo convierte una sola vez.
+     * La ruta incluye una huella del archivo: al reemplazar el .docx de la plantilla se genera otro PDF.
+     */
+    public function ensureTemplatePdf(Template $template): string
+    {
+        $path = $this->templatePdfPath($template);
+
+        if ($this->disk()->exists($path)) {
+            return $path;
+        }
+
+        $tmp = $this->convertUrlToPdf(
+            'tpl'.$template->id.'f'.substr(sha1((string) $template->file_path), 0, 12),
+            (Str::slug($template->name) ?: 'plantilla').'.docx',
+            $this->templateFileUrl($template),
+        );
+
+        try {
+            $stream = fopen($tmp, 'rb');
+            $this->disk()->put($path, $stream);
+
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        } finally {
+            @unlink($tmp);
+        }
+
+        return $path;
+    }
+
+    /** Ruta del PDF de una plantilla; $filePath permite calcular la del archivo anterior al reemplazarlo. */
+    public function templatePdfPath(Template $template, ?string $filePath = null): string
+    {
+        return 'pdf/templates/'.$template->id.'-'.substr(sha1($filePath ?? (string) $template->file_path), 0, 12).'.pdf';
+    }
+
+    /** Borra el PDF en caché de una plantilla (al reemplazar su archivo). */
+    public function forgetTemplatePdf(Template $template, ?string $filePath = null): void
+    {
+        $this->disk()->delete($this->templatePdfPath($template, $filePath));
+    }
+
+    /**
+     * Convierte un .docx (que el Document Server descarga desde $sourceUrl) a PDF con su API de conversión.
+     *
+     * @param  string  $key  Clave del trabajo: [0-9a-zA-Z], máx. 128 caracteres.
+     * @return string Ruta del PDF temporal (hay que borrarlo después de enviarlo).
+     */
+    private function convertUrlToPdf(string $key, string $title, string $sourceUrl): string
+    {
         $payload = [
             'async' => false,
             'filetype' => 'docx',
-            // Clave determinista: el Document Server reutiliza su caché entre descargas.
-            'key' => $isTemplate ? 'tpl'.$document->id.'v'.$document->updated_at?->timestamp : 'pdf'.$document->id.'v'.$document->version,
+            'key' => $key,
             'outputtype' => 'pdf',
-            'title' => (Str::slug($isTemplate ? $document->name : $document->title) ?: 'documento').'.docx',
-            'url' => $isTemplate ? $this->templateFileUrl($document) : $this->fileUrl($document),
+            'title' => $title,
+            'url' => $sourceUrl,
         ];
 
         $request = Http::timeout(120)->acceptJson()->asJson();

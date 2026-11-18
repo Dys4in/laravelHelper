@@ -21,6 +21,7 @@ class UserRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
+            'name' => trim((string) $this->input('name')),
             'email' => strtolower(trim((string) $this->input('email'))),
         ]);
     }
@@ -29,20 +30,25 @@ class UserRequest extends FormRequest
     {
         $user = $this->route('user');
         $isUpdate = $user !== null;
-        $isMod = $this->input('role') === UserRole::Mod->value;
 
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', Rule::unique('users', 'name')->ignore($user?->id)],
+            'username' => ['nullable', 'string', 'max:50', Rule::unique('users', 'username')->ignore($user?->id)],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user?->id)],
-            'phone' => ['nullable', 'string', 'max:30'],
             'role' => ['required', Rule::enum(UserRole::class)],
+            // Usuario: una sola área (obligatoria). Administrador: opcional.
             'area_id' => [
-                Rule::requiredIf(fn () => ! $isMod),
+                Rule::requiredIf(fn () => $this->input('role') === UserRole::User->value),
                 'nullable',
                 Rule::exists('areas', 'id')->whereNull('deleted_at'),
             ],
-            'area_ids' => [Rule::requiredIf(fn () => $isMod), 'nullable', 'array'],
-            'area_ids.*' => ['integer', 'distinct', Rule::exists('areas', 'id')->whereNull('deleted_at')],
+            // Moderador: una o varias áreas (la primera que se marque queda como principal).
+            'areas' => [
+                Rule::requiredIf(fn () => $this->input('role') === UserRole::Mod->value),
+                'nullable',
+                'array',
+            ],
+            'areas.*' => ['integer', 'distinct', Rule::exists('areas', 'id')->whereNull('deleted_at')],
             'status' => ['required', Rule::in(['active', 'inactive'])],
             'password' => [$isUpdate ? 'nullable' : 'required', 'confirmed', Password::defaults()],
         ];
@@ -52,15 +58,16 @@ class UserRequest extends FormRequest
     {
         return [
             'name.required' => 'El nombre es obligatorio.',
+            'name.unique' => 'Ya existe un usuario con ese nombre.',
             'email.required' => 'El correo es obligatorio.',
             'email.email' => 'Escribe un correo válido.',
             'email.unique' => 'Ya existe un usuario con ese correo.',
+            'username.unique' => 'Ese nombre de usuario ya está en uso.',
             'role.required' => 'Selecciona un rol.',
-            'area_id.required' => 'Selecciona un área.',
+            'area_id.required' => 'Asigna un área al usuario.',
             'area_id.exists' => 'El área seleccionada no existe.',
-            'area_ids.required' => 'Selecciona al menos un área para el moderador.',
-            'area_ids.*.exists' => 'El área seleccionada no existe.',
-            'area_ids.*.distinct' => 'No repitas áreas.',
+            'areas.required' => 'Asigna al menos un área al moderador.',
+            'areas.*.exists' => 'Una de las áreas seleccionadas no existe.',
             'password.required' => 'La contraseña es obligatoria.',
             'password.confirmed' => 'La confirmación de contraseña no coincide.',
         ];

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\EnforceIdleTimeout;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,9 +22,16 @@ class AuthenticatedSessionController extends Controller
     {
         $email = $request->cookie(self::REMEMBER_COOKIE);
 
-        return view('auth.login', [
+        $view = view('auth.login', [
             'rememberedEmail' => is_string($email) && filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null,
         ]);
+
+        // El navegador cierra la sesión por inactividad y llega aquí con ?expired=1 (ver <x-idle-timeout>).
+        if ($request->boolean('expired') && ! session()->has('status')) {
+            session()->now('status', 'Tu sesión se cerró por '.EnforceIdleTimeout::limitMinutes().' minutos de inactividad. Inicia sesión de nuevo.');
+        }
+
+        return $view;
     }
 
     public function store(LoginRequest $request): RedirectResponse
@@ -31,7 +39,9 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
-        $request->session()->put('helper_last_activity', time());
+
+        // Arranca el reloj de inactividad desde el inicio de sesión.
+        $request->session()->put(EnforceIdleTimeout::SESSION_KEY, now()->getTimestamp());
 
         // "Recordarme": se guarda el correo (nunca la contraseña) para precargarlo la próxima vez.
         if ($request->boolean('remember')) {
@@ -46,6 +56,11 @@ class AuthenticatedSessionController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
+        // El navegador envía reason=idle cuando cierra la sesión por inactividad (queda así en el audit trail).
+        if ($request->input('reason') === 'idle') {
+            $request->attributes->set('idle_logout', true);
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

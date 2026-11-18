@@ -9,7 +9,9 @@
   $invalid = fn (string $key) => $err($key) !== '' ? 'aria-invalid=true' : '';
   $currentRole = $val('role', $user->role?->value);
   $primaryArea = $val('area_id', $user->exists ? ($user->area_id ?? $user->areas->pluck('id')->first()) : null);
-  $selectedAreas = array_map('intval', (array) $val('area_ids', $user->exists ? ($user->areas->pluck('id')->all() ?: ($user->area_id ? [$user->area_id] : [])) : []));
+  $selectedAreas = array_map('intval', (array) $val('areas', $user->exists ? ($user->areas->pluck('id')->all() ?: ($user->area_id ? [$user->area_id] : [])) : []));
+  $areaNames = $areas->pluck('name', 'id');
+  $areaSummary = collect($selectedAreas)->map(fn ($id) => $areaNames->get($id))->filter()->implode(', ');
   $isMod = $currentRole === 'mod';
 @endphp
 
@@ -27,12 +29,6 @@
   </div>
 
   <div>
-    <label for="{{ $p }}phone" class="hp-label">Teléfono</label>
-    <input id="{{ $p }}phone" name="phone" type="text" value="{{ $val('phone', $user->phone) }}" class="hp-input" {{ $invalid('phone') }}>
-    @if ($e = $err('phone'))<p class="hp-error">{{ $e }}</p>@endif
-  </div>
-
-  <div>
     <label for="{{ $p }}role" class="hp-label">Rol *</label>
     <select id="{{ $p }}role" name="role" required class="hp-select" data-role-select {{ $invalid('role') }}>
       @foreach ($roles as $role)
@@ -40,6 +36,14 @@
       @endforeach
     </select>
     @if ($e = $err('role'))<p class="hp-error">{{ $e }}</p>@endif
+  </div>
+
+  <div>
+    <label for="{{ $p }}status" class="hp-label">Estado *</label>
+    <select id="{{ $p }}status" name="status" required class="hp-select" {{ $invalid('status') }}>
+      <option value="active" @selected($val('status', $user->status) === 'active')>Activo</option>
+      <option value="inactive" @selected($val('status', $user->status) === 'inactive')>Inactivo</option>
+    </select>
   </div>
 
   <div class="sm:col-span-2" data-area-single @if ($isMod) hidden @endif>
@@ -56,23 +60,35 @@
   </div>
 
   <div class="sm:col-span-2" data-area-multi @if (! $isMod) hidden @endif>
-    <label for="{{ $p }}area_ids" class="hp-label">Áreas (moderador) *</label>
-    <select id="{{ $p }}area_ids" name="area_ids[]" multiple data-placeholder="Selecciona una o varias áreas" class="hp-select" data-area-multi-input @if (! $isMod) disabled @endif {{ $invalid('area_ids') }}>
-      @foreach ($areas as $area)
-        <option value="{{ $area->id }}" @selected(in_array($area->id, $selectedAreas, true))>
-          {{ $area->name }}{{ $area->isActive() ? '' : ' (suspendida)' }}
-        </option>
-      @endforeach
-    </select>
-    @if ($e = $err('area_ids'))<p class="hp-error">{{ $e }}</p>@elseif ($e = $err('area_ids.0'))<p class="hp-error">{{ $e }}</p>@else<p class="hp-help">Solo los moderadores pueden tener más de un área. La primera será el área principal.</p>@endif
-  </div>
+    <label for="{{ $p }}areas" class="hp-label">Áreas del moderador *</label>
+    <div class="relative">
+      <button id="{{ $p }}areas" type="button" data-area-multi-toggle data-click-guard-ignore
+              aria-haspopup="true" aria-expanded="false" {{ $invalid('areas') }}
+              class="flex w-full items-center justify-between gap-2 rounded-xl border bg-white px-3.5 py-2.5 text-left text-[13px] transition focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 {{ $err('areas') ? 'border-red-400 text-gray-900 focus:border-red-500 focus:ring-red-200' : 'border-line text-gray-900 focus:border-brand focus:ring-brand/20' }}"
+              @if (! $isMod) disabled @endif>
+        <span class="truncate {{ $areaSummary === '' ? 'text-gray-500' : '' }}" data-area-multi-summary data-empty="Selecciona una o varias áreas">{{ $areaSummary !== '' ? $areaSummary : 'Selecciona una o varias áreas' }}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
 
-  <div>
-    <label for="{{ $p }}status" class="hp-label">Estado *</label>
-    <select id="{{ $p }}status" name="status" required class="hp-select" {{ $invalid('status') }}>
-      <option value="active" @selected($val('status', $user->status) === 'active')>Activo</option>
-      <option value="inactive" @selected($val('status', $user->status) === 'inactive')>Inactivo</option>
-    </select>
+      <div class="hidden fixed z-[140] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg ring-1 ring-black/5" data-area-multi-popup>
+        <div class="border-b border-gray-100 p-2">
+          <input type="text" data-area-multi-search aria-label="Buscar área" placeholder="Buscar área..."
+                 class="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-[13px] text-gray-900 placeholder-gray-400 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand">
+        </div>
+        <div class="max-h-60 overflow-y-auto p-1" role="group" aria-label="Áreas del moderador">
+          @foreach ($areas as $area)
+            <label class="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-gray-700 transition hover:bg-gray-100" data-area-option>
+              <input type="checkbox" name="areas[]" value="{{ $area->id }}" data-area-checkbox
+                     class="h-4 w-4 shrink-0 rounded border-gray-300 text-brand focus:ring-brand"
+                     @checked(in_array($area->id, $selectedAreas, true)) @if (! $isMod) disabled @endif>
+              <span class="truncate"><span data-area-name>{{ $area->name }}</span>@if (! $area->isActive()) <span class="text-amber-600">(suspendida)</span>@endif</span>
+            </label>
+          @endforeach
+        </div>
+        <p class="border-t border-gray-100 px-3 py-2 text-[11px] text-gray-500">La primera área marcada será la principal.</p>
+      </div>
+    </div>
+    @if ($e = $err('areas'))<p class="hp-error">{{ $e }}</p>@elseif ($e = $err('areas.0'))<p class="hp-error">{{ $e }}</p>@else<p class="hp-help">Marca una o varias áreas para este moderador.</p>@endif
   </div>
 
   <div class="sm:col-span-2 grid gap-4 sm:grid-cols-2">
@@ -98,15 +114,111 @@
   var singleWrap = form.querySelector('[data-area-single]');
   var multiWrap = form.querySelector('[data-area-multi]');
   var single = form.querySelector('[data-area-single-input]');
-  var multi = form.querySelector('[data-area-multi-input]');
+  var toggle = form.querySelector('[data-area-multi-toggle]');
+  var popup = form.querySelector('[data-area-multi-popup]');
+  var summary = form.querySelector('[data-area-multi-summary]');
+  var search = form.querySelector('[data-area-multi-search]');
+  var checks = form.querySelectorAll('[data-area-checkbox]');
+  var options = form.querySelectorAll('[data-area-option]');
+  var fields = form.querySelectorAll('input[name], select[name], textarea[name]');
+  var initialValues = Array.prototype.map.call(fields, function (f) {
+    return f.type === 'checkbox' ? f.checked : f.value;
+  });
+
+  function refresh() {
+    var names = [];
+    checks.forEach(function (c) {
+      var option = c.closest('[data-area-option]');
+      var name = option ? option.querySelector('[data-area-name]') : null;
+      if (c.checked && name) names.push(name.textContent.trim());
+    });
+    summary.textContent = names.length ? names.join(', ') : (summary.dataset.empty || '');
+    summary.classList.toggle('text-gray-500', !names.length);
+  }
+
+  function resetForm() {
+    close();
+    fields.forEach(function (f, i) {
+      if (f.type === 'checkbox') f.checked = initialValues[i];
+      else f.value = initialValues[i];
+    });
+    refresh();
+    sync();
+  }
+
+  function place() {
+    var r = toggle.getBoundingClientRect();
+    popup.style.left = r.left + 'px';
+    popup.style.width = r.width + 'px';
+    var room = window.innerHeight - r.bottom;
+    if (room < 240 && r.top > room) {
+      popup.style.top = '';
+      popup.style.bottom = (window.innerHeight - r.top + 4) + 'px';
+    } else {
+      popup.style.bottom = '';
+      popup.style.top = (r.bottom + 4) + 'px';
+    }
+  }
+
+  function filter() {
+    var q = search.value.trim().toLowerCase();
+    options.forEach(function (o) { o.hidden = q !== '' && o.textContent.toLowerCase().indexOf(q) === -1; });
+  }
+
+  function close() {
+    if (popup.classList.contains('hidden')) return;
+    popup.classList.add('hidden');
+    popup.removeAttribute('data-ui-select-popup');
+    toggle.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('mousedown', onOutside, true);
+    window.removeEventListener('scroll', onScroll, true);
+    window.removeEventListener('resize', place);
+    document.removeEventListener('keydown', onKey);
+    if (window.__areaMultiClose === close) window.__areaMultiClose = null;
+  }
+
+  function onOutside(e) { if (! popup.contains(e.target) && ! toggle.contains(e.target)) close(); }
+  function onScroll(e) { if (! popup.contains(e.target)) close(); }
+  function onKey(e) {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); toggle.focus(); }
+  }
+
+  function open() {
+    if (toggle.disabled) return;
+    if (window.__areaMultiClose) window.__areaMultiClose();
+    popup.classList.remove('hidden');
+    popup.setAttribute('data-ui-select-popup', '');
+    toggle.setAttribute('aria-expanded', 'true');
+    place();
+    search.value = '';
+    filter();
+    search.focus();
+    document.addEventListener('mousedown', onOutside, true);
+    window.addEventListener('scroll', onScroll, true);
+    window.addEventListener('resize', place);
+    document.addEventListener('keydown', onKey);
+    window.__areaMultiClose = close;
+  }
+
   function sync() {
     var isMod = role && role.value === 'mod';
     if (singleWrap) singleWrap.hidden = isMod;
     if (multiWrap) multiWrap.hidden = !isMod;
     if (single) single.disabled = isMod;
-    if (multi) multi.disabled = !isMod;
+    checks.forEach(function (c) { c.disabled = !isMod; });
+    toggle.disabled = !isMod;
+    if (! isMod) close();
   }
+
+  checks.forEach(function (c) { c.addEventListener('change', refresh); });
+  toggle.addEventListener('click', function () {
+    if (popup.classList.contains('hidden')) open(); else close();
+  });
+  search.addEventListener('input', filter);
   if (role) role.addEventListener('change', sync);
+  var modalBox = form.closest('[data-app-modal]');
+  if (modalBox) modalBox.addEventListener('modal:close', resetForm);
+  refresh();
   sync();
 })();
 </script>

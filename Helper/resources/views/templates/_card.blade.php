@@ -61,7 +61,7 @@
 
     @if ($manage)
       <div class="hp-card-foot">
-        <a href="{{ route('templates.download', $t) }}" class="hp-btn-outline"><i class="bi bi-download" aria-hidden="true"></i> Descargar PDF</a>
+        <a href="{{ route('templates.download', $t) }}" class="hp-btn-outline"><i class="bi bi-download" aria-hidden="true"></i> Descargar</a>
         <a href="{{ route('templates.edit', $t) }}" class="hp-btn-outline"><i class="bi bi-pencil" aria-hidden="true"></i> Editar</a>
 
         <form method="POST" action="{{ route('templates.status', $t) }}"

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Area;
 use App\Models\AuditLog;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -34,35 +33,6 @@ class AuditLogController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'areas' => Area::withTrashed()->orderBy('name')->get(),
-            'lastId' => (int) ($logs->first()?->id ?? 0),
-            'firstPage' => $logs->currentPage() === 1,
-        ]);
-    }
-
-    /**
-     * Movimientos nuevos desde el id indicado, con los mismos filtros de la pantalla.
-     * La pantalla lo consulta cada pocos segundos para mostrarlos en vivo.
-     */
-    public function feed(Request $request): JsonResponse
-    {
-        $after = max(0, (int) $request->input('after'));
-
-        $logs = AuditLog::query()
-            ->with('area')
-            ->filtered($this->filters($request))
-            ->where('id', '>', $after)
-            ->orderBy('id')
-            ->limit(50)
-            ->get();
-
-        $html = $logs->sortByDesc('id')
-            ->map(fn (AuditLog $log) => view('audit._row', ['log' => $log])->render())
-            ->implode('');
-
-        return response()->json([
-            'count' => $logs->count(),
-            'last_id' => (int) ($logs->max('id') ?? $after),
-            'html' => $html,
         ]);
     }
 

@@ -1,6 +1,6 @@
 {{--
   Campos de plantilla. Se usa en la ventana «Subir plantilla» ($modalId) y en la página de edición.
-  Variables: $template · $areas (solo el admin elige área) · $modalId (opcional)
+  Variables: $template · $areas (áreas entre las que se puede elegir) · $modalId (opcional)
 --}}
 @php
   $isEdit = $template->exists;
@@ -11,6 +11,8 @@
   $val = fn (string $key, $default = null) => $mine ? old($key, $default) : $default;
   $err = fn (string $key) => $mine ? $errors->first($key) : '';
   $me = auth()->user();
+  // El admin elige el área; un moderador con varias áreas la elige al subir (al editar no se puede mover).
+  $pickArea = $me->isAdmin() || (! $isEdit && $areas->count() > 1);
 @endphp
 
 <div class="hp-modal-grid">
@@ -28,7 +30,7 @@
     @if ($e = $err('description'))<p class="hp-error">{{ $e }}</p>@endif
   </div>
 
-  @if ($me->isAdmin() || $me->hasRole('mod'))
+  @if ($pickArea)
     <div>
       <label for="{{ $p }}area_id" class="hp-label">Asignar al área *</label>
       <select id="{{ $p }}area_id" name="area_id" required class="hp-select" @if ($err('area_id')) aria-invalid="true" @endif>
@@ -44,7 +46,7 @@
   @else
     <div>
       <span class="hp-label">Asignada al área</span>
-      <p class="hp-static"><span class="font-semibold">{{ $me->area?->name }}</span></p>
+      <p class="hp-static"><span class="font-semibold">{{ $isEdit ? ($template->area?->name ?? '—') : ($areas->first()?->name ?? $me->area?->name) }}</span></p>
     </div>
   @endif
 

@@ -33,6 +33,7 @@ class AuditLog extends Model
         'auth.login_blocked' => 'Acceso bloqueado',
         'auth.lockout' => 'Bloqueo temporal',
         'auth.session_revoked' => 'Sesión revocada',
+        'auth.idle_logout' => 'Cierre por inactividad',
         'document.opened' => 'Documento abierto',
         'document.saved' => 'Documento guardado',
         'document.downloaded' => 'Descarga',
@@ -40,10 +41,10 @@ class AuditLog extends Model
     ];
 
     private const FIELDS = [
-        'name' => 'Nombre', 'email' => 'Correo', 'phone' => 'Teléfono',
-        'role' => 'Rol', 'status' => 'Estado', 'area_id' => 'Área', 'description' => 'Descripción',
+        'name' => 'Nombre', 'username' => 'Usuario', 'email' => 'Correo', 'phone' => 'Teléfono',
+        'role' => 'Rol', 'status' => 'Estado', 'area_id' => 'Área', 'areas' => 'Áreas', 'description' => 'Descripción',
         'title' => 'Título', 'original_name' => 'Archivo', 'file_size' => 'Tamaño',
-        'template_id' => 'Plantilla', 'password' => 'Contraseña',
+        'template_id' => 'Plantilla', 'template_name' => 'Plantilla', 'password' => 'Contraseña',
     ];
 
     private const VALUES = [

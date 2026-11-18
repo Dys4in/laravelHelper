@@ -18,7 +18,7 @@ class Document extends Model
     public const MAX_PER_USER = 30;
 
     protected $fillable = [
-        'code', 'title', 'status', 'user_id', 'area_id', 'template_id',
+        'code', 'title', 'template_name', 'status', 'user_id', 'area_id', 'template_id',
         'file_path', 'doc_key', 'version', 'updated_by', 'last_saved_at',
     ];
 
@@ -74,7 +74,7 @@ class Document extends Model
     }
 
     /**
-     * Documentos que el usuario supervisa: el admin, todos; el moderador, los de su área.
+     * Documentos que el usuario supervisa: el admin, todos; el moderador, los de sus áreas.
      * Los usuarios normales no supervisan nada (no ven documentos ajenos).
      */
     public function scopeSupervisedBy(Builder $query, User $user): Builder
@@ -83,8 +83,9 @@ class Document extends Model
             return $query;
         }
 
+        // Moderador: los documentos de TODAS sus áreas activas.
         if ($user->hasRole('mod')) {
-            return $query->whereIn('area_id', $user->assignedAreaIds() ?: [0]);
+            return $query->whereIn('area_id', $user->areaIds() ?: [0]);
         }
 
         return $query->whereRaw('1 = 0');

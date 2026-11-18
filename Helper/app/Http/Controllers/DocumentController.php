@@ -35,7 +35,7 @@ class DocumentController extends Controller
     }
 
     /**
-     * Supervisión: moderador = documentos de su área; administrador = todos.
+     * Supervisión: moderador = documentos de sus áreas; administrador = todos.
      * Solo supervisa; no se crean documentos desde aquí.
      */
     public function supervision(Request $request): View
@@ -53,7 +53,10 @@ class DocumentController extends Controller
                         ->orWhereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%"));
                 });
             })
-            ->when($user->isAdmin() && $request->filled('area'), fn ($q) => $q->where('area_id', $request->integer('area')))
+            ->when(
+                $request->filled('area') && ($user->isAdmin() || $user->hasArea($request->integer('area'))),
+                fn ($q) => $q->where('area_id', $request->integer('area')),
+            )
             ->when($request->filled('author'), fn ($q) => $q->where('user_id', $request->integer('author')))
             ->when(in_array($request->input('status'), [Document::DRAFT, Document::COMPLETED], true), fn ($q) => $q->where('status', $request->input('status')))
             ->latest('updated_at')
@@ -62,9 +65,17 @@ class DocumentController extends Controller
 
         return view('documents.supervision', [
             'documents' => $documents,
-            'areas' => $user->isAdmin() ? Area::orderBy('name')->get() : collect(),
+            // Lista del filtro «área»: el admin ve todas; el moderador, las suyas (solo si tiene más de una).
+            'areas' => $user->isAdmin()
+                ? Area::orderBy('name')->get()
+                : $user->assignedAreas()->filter(fn (Area $area) => ! $area->trashed() && $area->isActive())->values(),
             'authors' => User::query()
-                ->when(! $user->isAdmin(), fn ($q) => $q->whereIn('area_id', $user->assignedAreaIds() ?: [0]))
+                ->when(! $user->isAdmin(), function ($q) use ($user) {
+                    $ids = $user->areaIds() ?: [0];
+
+                    $q->where(fn ($w) => $w->whereIn('area_id', $ids)
+                        ->orWhereIn('id', fn ($sub) => $sub->from('area_user')->select('user_id')->whereIn('area_id', $ids)));
+                })
                 ->orderBy('name')
                 ->get(['id', 'name']),
         ]);
@@ -82,6 +93,10 @@ class DocumentController extends Controller
         Gate::authorize('create', Document::class);
 
         $user = $request->user();
+        $areaIds = $user->areaIds();
+
+        // El admin y el moderador con varias áreas eligen en cuál se crea el documento.
+        $mustPickArea = $user->isAdmin() || count($areaIds) > 1;
 
         if (Document::limitReachedFor($user)) {
             return back()->withInput()->with(
@@ -93,12 +108,18 @@ class DocumentController extends Controller
         $data = $request->validate([
             'template_id' => ['required', 'integer'],
             'title' => ['required', 'string', 'max:150'],
-            // El admin no tiene área propia: elige en cuál se crea el documento.
-            'area_id' => [Rule::requiredIf($user->isAdmin() || $user->hasRole('mod')), 'nullable', Rule::exists('areas', 'id')->whereNull('deleted_at')],
+            'area_id' => [
+                Rule::requiredIf($mustPickArea),
+                'nullable',
+                $user->isAdmin()
+                    ? Rule::exists('areas', 'id')->whereNull('deleted_at')
+                    : Rule::in($areaIds ?: [0]),
+            ],
         ], [
             'template_id.required' => 'Elige una plantilla.',
             'title.required' => 'Escribe un título para el documento.',
             'area_id.required' => 'Selecciona el área del documento.',
+            'area_id.in' => 'Elige una de tus áreas.',
         ]);
 
         $template = Template::query()->active()->availableFor($user)->find($data['template_id']);
@@ -113,19 +134,21 @@ class DocumentController extends Controller
             return back()->withInput()->with('error', 'El archivo de la plantilla no se encontró en el servidor. Avisa al moderador de tu área.');
         }
 
-        $areaId = ($user->isAdmin() || $user->hasRole('mod')) ? (int) $data['area_id'] : $user->area_id;
-        if ($user->hasRole('mod') && ! $user->canManageArea($areaId)) {
-            return back()->withInput()->with('error', 'No tienes permiso para crear documentos en esa área.');
-        }
+        // El nombre de la plantilla queda fijo al usarla; lo que escriba el usuario se añade al final.
+        $templateName = $template->name;
+        $title = Str::limit(trim($templateName.' - '.$data['title']), 150, '');
+
+        $areaId = $mustPickArea ? (int) $data['area_id'] : ($areaIds[0] ?? null);
         $path = 'documents/'.Str::uuid().'.docx';
 
         $disk->copy($template->file_path, $path);
         $this->useArialByDefault($oo, $path);
 
         try {
-            $document = DB::transaction(function () use ($data, $user, $areaId, $template, $path) {
+            $document = DB::transaction(function () use ($title, $templateName, $user, $areaId, $template, $path) {
                 $document = Document::create([
-                    'title' => $data['title'],
+                    'title' => $title,
+                    'template_name' => $templateName,
                     'status' => Document::DRAFT,
                     'user_id' => $user->id,
                     'area_id' => $areaId,
@@ -226,14 +249,10 @@ class DocumentController extends Controller
             : "«{$document->title}» volvió a borrador: los usuarios pueden editarlo de nuevo y no se puede descargar.");
     }
 
-    /** Descarga: solo documentos completados (el admin siempre). Los completados salen en PDF. */
+    /** Descarga: solo documentos completados, sin excepciones. Siempre sale en PDF, nunca en .docx. */
     public function download(Document $document, OnlyOfficeService $oo): StreamedResponse|RedirectResponse
     {
-        Gate::authorize('view', $document);
-
-        if (! Gate::allows('download', $document)) {
-            return back()->with('error', 'El documento se podrá descargar cuando esté marcado como completado.');
-        }
+        Gate::authorize('download', $document);
 
         abort_unless($document->file_path && $oo->disk()->exists($document->file_path), 404);
 

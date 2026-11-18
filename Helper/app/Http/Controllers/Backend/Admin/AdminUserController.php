@@ -7,8 +7,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UserRequest;
 use App\Models\Area;
 use App\Models\User;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -22,17 +25,23 @@ class AdminUserController extends Controller
             ->with(['area', 'areas'])
             ->when($search !== '', function ($query) use ($search) {
                 // La abreviatura se calcula en PHP, así que resolvemos los IDs que coinciden.
-                $abbreviationIds = User::query()->select(['id', 'name'])->cursor()
+                $abbreviationIds = User::query()
+                    ->get(['id', 'name'])
                     ->filter(fn (User $user) => Str::contains(Str::lower($user->short_name), Str::lower($search)))
                     ->pluck('id');
 
                 $query->where(function ($w) use ($search, $abbreviationIds) {
                     $w->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('username', 'like', "%{$search}%")
                         ->when($abbreviationIds->isNotEmpty(), fn ($q) => $q->orWhereIn('id', $abbreviationIds));
                 });
             })
-            ->when($request->filled('area'), fn ($q) => $q->where(fn ($w) => $w->where('area_id', $request->integer('area'))->orWhereHas('areas', fn ($a) => $a->where('areas.id', $request->integer('area')))))
+            ->when($request->filled('area'), fn ($q) => $q->where(function ($w) use ($request) {
+                // Incluye a los moderadores que tienen esa área entre las suyas.
+                $w->where('area_id', $request->integer('area'))
+                    ->orWhereIn('id', fn ($sub) => $sub->from('area_user')->select('user_id')->where('area_id', $request->integer('area')));
+            }))
             ->when($request->filled('role'), fn ($q) => $q->where('role', $request->input('role')))
             ->orderBy('name')
             ->paginate(15)
@@ -51,13 +60,12 @@ class AdminUserController extends Controller
     public function store(UserRequest $request): RedirectResponse
     {
         $data = $request->validated();
-        $isMod = $data['role'] === UserRole::Mod->value;
-        $areaIds = array_values(array_unique(array_map('intval', $data['area_ids'] ?? [])));
-        unset($data['area_ids']);
-        $data['area_id'] = $isMod ? ($areaIds[0] ?? null) : ($data['area_id'] ?? null);
+        [$primaryId, $areaIds] = $this->resolveAreas($data, null);
 
-        $user = User::create($data);
-        $user->areas()->sync($isMod ? $areaIds : []);
+        DB::transaction(function () use ($data, $primaryId, $areaIds) {
+            $user = User::create(array_merge(Arr::except($data, ['areas']), ['area_id' => $primaryId]));
+            $user->areas()->sync($areaIds);
+        });
 
         return redirect()->route('admin.users.index')->with('status', 'Usuario creado correctamente.');
     }
@@ -66,9 +74,10 @@ class AdminUserController extends Controller
     {
         return view('admin.users.edit', [
             'user' => $user,
-            // Áreas activas + la actual del usuario (aunque esté suspendida) para no perderla al guardar.
+            // Áreas activas + las actuales del usuario (aunque estén suspendidas) para no perderlas al guardar.
             'areas' => Area::query()
-                ->where(fn ($q) => $q->where('status', Area::ACTIVE)->orWhere('id', $user->area_id)->orWhereIn('id', $user->areas->pluck('id')))
+                ->where(fn ($q) => $q->where('status', Area::ACTIVE)
+                    ->orWhereIn('id', $user->assignedAreas()->pluck('id')))
                 ->orderBy('name')
                 ->get(),
             'roles' => UserRole::cases(),
@@ -78,10 +87,6 @@ class AdminUserController extends Controller
     public function update(UserRequest $request, User $user): RedirectResponse
     {
         $data = $request->validated();
-        $isMod = $data['role'] === UserRole::Mod->value;
-        $areaIds = array_values(array_unique(array_map('intval', $data['area_ids'] ?? [])));
-        unset($data['area_ids']);
-        $data['area_id'] = $isMod ? ($areaIds[0] ?? null) : ($data['area_id'] ?? null);
 
         // Un admin no puede quitarse su propio rol ni desactivarse (evita quedarse sin acceso).
         if ($user->is($request->user()) && ($data['role'] !== UserRole::Admin->value || $data['status'] !== 'active')) {
@@ -93,8 +98,37 @@ class AdminUserController extends Controller
             unset($data['password']);
         }
 
-        $user->update($data);
-        $user->areas()->sync($isMod ? $areaIds : []);
+        $before = $user->assignedAreas()->pluck('name')->join(', ');
+        [$primaryId, $areaIds] = $this->resolveAreas($data, $user);
+
+        $currentAreas = $user->areas()->pluck('areas.id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+        sort($areaIds);
+
+        $unchanged = (string) $data['name'] === (string) $user->name
+            && strtolower((string) $data['email']) === strtolower((string) $user->email)
+            && (! array_key_exists('username', $data) || (string) $data['username'] === (string) $user->username)
+            && (string) $data['role'] === (string) $user->role?->value
+            && (string) $data['status'] === (string) $user->status
+            && (int) $primaryId === (int) $user->area_id
+            && $areaIds === $currentAreas
+            && ! array_key_exists('password', $data);
+
+        if ($unchanged) {
+            return back()->withInput()->with('status', 'No hay cambios para guardar.');
+        }
+
+        DB::transaction(function () use ($user, $data, $primaryId, $areaIds) {
+            $user->update(array_merge(Arr::except($data, ['areas']), ['area_id' => $primaryId]));
+            $user->areas()->sync($areaIds);
+        });
+
+        // El registro automático (AuditObserver) no ve la tabla area_user: los cambios de áreas del moderador se anotan aquí.
+        $user->forgetAreaCache();
+        $after = $user->assignedAreas()->pluck('name')->join(', ');
+
+        if ($user->hasRole('mod') && $before !== $after) {
+            AuditLogger::log('user.updated', "Áreas de {$user->name} cambiadas", $user, ['areas' => $before], ['areas' => $after]);
+        }
 
         return redirect()->route('admin.users.index')->with('status', 'Usuario actualizado correctamente.');
     }
@@ -110,5 +144,27 @@ class AdminUserController extends Controller
         return back()->with('status', $user->isActive()
             ? "{$user->name} fue activado."
             : "{$user->name} fue desactivado y ya no podrá iniciar sesión.");
+    }
+
+    /**
+     * Área principal (users.area_id) y lista completa de áreas (tabla area_user) según el rol:
+     *  - Moderador: todas las marcadas; la principal es la que ya tenía (si sigue marcada) o la primera.
+     *  - Usuario / administrador: solo area_id y sin áreas extra.
+     *
+     * @param  array<string, mixed>  $data  Datos validados del formulario.
+     * @return array{0: ?int, 1: list<int>}
+     */
+    private function resolveAreas(array $data, ?User $current): array
+    {
+        if (($data['role'] ?? null) === UserRole::Mod->value) {
+            $ids = array_values(array_unique(array_map('intval', $data['areas'] ?? [])));
+            $kept = $current && in_array((int) $current->area_id, $ids, true) ? (int) $current->area_id : null;
+
+            return [$kept ?? ($ids[0] ?? null), $ids];
+        }
+
+        $areaId = $data['area_id'] ?? null;
+
+        return [filled($areaId) ? (int) $areaId : null, []];
     }
 }

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable
@@ -26,7 +27,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
-        'phone',
+        'username',
         'email',
         'password',
         'role',
@@ -54,26 +55,66 @@ class User extends Authenticatable
         return $this->belongsTo(Area::class)->withTrashed();
     }
 
-    /** Áreas adicionales que puede supervisar un moderador. */
+    /**
+     * Áreas del moderador (todas, incluida la principal). Para el resto de roles esta tabla no se usa:
+     * ver assignedAreas() para obtener las áreas de cualquier usuario.
+     */
     public function areas(): BelongsToMany
     {
-        return $this->belongsToMany(Area::class)->withTrashed();
+        return $this->belongsToMany(Area::class);   
+    }
+    /** Se calcula una vez por petición: las políticas lo consultan por cada tarjeta de la lista. */
+    private ?Collection $assignedAreasCache = null;
+
+    /**
+     * Todas las áreas asignadas (activas o no, incluso eliminadas), ordenadas por nombre.
+     *  - Moderador: su área principal (area_id) + las de la tabla area_user.
+     *  - Usuario / administrador: solo area_id.
+     *
+     * @return Collection<int, Area>
+     */
+    public function assignedAreas(): Collection
+    {
+        return $this->assignedAreasCache ??= $this->loadAssignedAreas();
     }
 
-    public function assignedAreaIds(): array
+    /** IDs de las áreas ACTIVAS del usuario (las suspendidas o eliminadas no dan acceso). */
+    public function areaIds(): array
     {
-        if (! $this->hasRole('mod')) {
-            return $this->area_id ? [(int) $this->area_id] : [];
+        return $this->assignedAreas()
+            ->filter(fn (Area $area) => ! $area->trashed() && $area->isActive())
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+    }
+
+    /** ¿Puede el usuario actuar sobre esta área (activa y asignada a él)? */
+    public function hasArea(?int $areaId): bool
+    {
+        return $areaId !== null && in_array($areaId, $this->areaIds(), true);
+    }
+
+    /** Hay que llamarlo si cambian el rol o las áreas del usuario dentro de la misma petición. */
+    public function forgetAreaCache(): void
+    {
+        $this->assignedAreasCache = null;
+    }
+
+    private function loadAssignedAreas(): Collection
+    {
+        if (! $this->hasRole('mod') || ! $this->exists) {
+            // Sin consulta extra: la relación suele estar cargada para mostrar el área en pantalla.
+            return $this->area ? collect([$this->area]) : collect();
         }
 
-        return $this->areas()->where('status', Area::ACTIVE)->whereNull('areas.deleted_at')
-            ->pluck('areas.id')->map(fn ($id) => (int) $id)->all();
-    }
-
-    public function canManageArea(?int $areaId): bool
-    {
-        return $areaId !== null && $this->hasRole('mod')
-            && in_array($areaId, $this->assignedAreaIds(), true);
+        return Area::withTrashed()
+            ->where(function ($query) {
+                $query->whereKey($this->area_id ?? 0)
+                    ->orWhereIn('id', fn ($sub) => $sub->from('area_user')->select('area_id')->where('user_id', $this->id));
+            })
+            ->orderBy('name')
+            ->get();
     }
 
     public function hasRole(string|UserRole ...$roles): bool
@@ -131,7 +172,7 @@ class User extends Authenticatable
 
     /**
      * Motivo por el que este usuario NO puede entrar, o null si puede.
-     * Reglas: cuenta activa y, salvo administradores, un área activa asignada.
+     * Reglas: cuenta activa y, salvo administradores, al menos un área activa asignada.
      */
     public function accessDeniedReason(): ?string
     {
@@ -139,15 +180,9 @@ class User extends Authenticatable
             return 'Tu cuenta está desactivada. Contacta al administrador.';
         }
 
-        if ($this->hasRole('mod')) {
-            if (count($this->assignedAreaIds()) === 0) {
-                return 'No tienes áreas activas asignadas. Contacta al administrador.';
-            }
-        } elseif (! $this->isAdmin()) {
-            $area = $this->area;
-            if (! $area || $area->trashed() || ! $area->isActive()) {
-                return 'Tu área está suspendida o no tienes un área asignada. Contacta al administrador.';
-            }
+        // Salvo los administradores, hace falta al menos un área activa (un moderador puede tener varias).
+        if (! $this->isAdmin() && $this->areaIds() === []) {
+            return 'Tu área está suspendida o no tienes un área asignada. Contacta al administrador.';
         }
 
         return null;

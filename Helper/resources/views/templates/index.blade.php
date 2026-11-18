@@ -1,6 +1,7 @@
 @php
   $me = auth()->user();
   $isAdmin = $me->isAdmin();
+  $pickArea = $isAdmin || $formAreas->count() > 1; // el admin y el moderador con varias áreas eligen el área
   $canUpload = $me->can('create', \App\Models\Template::class);
   $reopenName = $templates->getCollection()->firstWhere('id', (int) old('template_id'))?->name;
 @endphp
@@ -12,7 +13,7 @@
         @if ($isAdmin)
           Plantillas de todas las áreas. Úsalas para crear documentos o adminístralas.
         @elseif ($canManage)
-          Plantillas de tus áreas asignadas. Sube las que tu equipo necesita y actívalas o desactívalas cuando quieras.
+          {{ $formAreas->count() > 1 ? 'Plantillas de tus áreas ('.$formAreas->pluck('name')->join(', ').')' : 'Plantillas del área '.$formAreas->first()?->name }}. Sube las que tu equipo necesita y actívalas o desactívalas cuando quieras.
         @else
           Elige una plantilla de tu área para crear un documento. Se crea una copia: la plantilla original no cambia.
         @endif
@@ -87,7 +88,7 @@
 
           @if ($manage)
             <div class="hp-card-foot">
-              <a href="{{ route('templates.download', $t) }}" class="hp-btn-outline"><i class="bi bi-download" aria-hidden="true"></i> Descargar PDF</a>
+              <a href="{{ route('templates.download', $t) }}" class="hp-btn-outline"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Descargar PDF</a>
               <button type="button" class="hp-btn-outline" data-modal-open="edit-template-{{ $t->id }}"><i class="bi bi-pencil" aria-hidden="true"></i> Editar</button>
 
               <form method="POST" action="{{ route('templates.status', $t) }}"
@@ -135,19 +136,22 @@
       <input type="hidden" name="_modal" value="use-template">
       <input type="hidden" name="template_id" value="{{ old('template_id') }}" data-fill="template_id">
 
+      <input type="hidden" data-fill="template_name" data-use-template-name value="{{ $reopenName }}">
+
       <div class="rounded-lg bg-gray-50 px-4 py-3 text-sm">
-        <span class="text-gray-500">Plantilla:</span>
+        <span class="text-gray-500">Plantilla (nombre fijo):</span>
         <span class="font-semibold text-gray-900" data-fill="template_name">{{ $reopenName }}</span>
       </div>
 
       <div>
-        <label for="use_title" class="block text-sm font-medium text-gray-700">Título del documento *</label>
+        <label for="use_title" class="block text-sm font-medium text-gray-700">Nombre que se añade *</label>
         <input id="use_title" name="title" type="text" maxlength="150" required value="{{ old('title') }}"
                placeholder="Ej. Informe de verificación 03"
                class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand @error('title') !border-red-400 @enderror">
+        <p class="mt-1 text-xs text-gray-500">Nombre final: <span class="font-medium text-gray-800" data-use-preview>{{ $reopenName ? $reopenName.' - '.old('title') : '' }}</span></p>
       </div>
 
-      @if ($isAdmin || $me->hasRole('mod'))
+      @if ($pickArea)
         <div>
           <label for="use_area" class="block text-sm font-medium text-gray-700">Área del documento *</label>
           <select id="use_area" name="area_id" required data-fill="area_id"
@@ -159,7 +163,7 @@
           </select>
         </div>
       @else
-        <p class="text-sm text-gray-600">Se creará en tu área: <span class="font-semibold text-gray-900">{{ $me->area?->name }}</span></p>
+        <p class="text-sm text-gray-600">Se creará en tu área: <span class="font-semibold text-gray-900">{{ $formAreas->first()?->name ?? $me->area?->name }}</span></p>
       @endif
 
       <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
@@ -208,4 +212,23 @@
       </form>
     </x-app-modal>
   @endforeach
+
+  <script>
+  (function () {
+    var modal = document.getElementById('modal-use-template');
+    if (!modal || modal.dataset.bound === '1') return;
+    modal.dataset.bound = '1';
+    var nameInput = modal.querySelector('[data-use-template-name]');
+    var titleInput = modal.querySelector('#use_title');
+    var preview = modal.querySelector('[data-use-preview]');
+    function refresh() {
+      var prefix = nameInput.value.trim();
+      var suffix = titleInput.value.trim();
+      preview.textContent = prefix ? prefix + ' - ' + suffix : suffix;
+    }
+    nameInput.addEventListener('change', refresh);
+    titleInput.addEventListener('input', refresh);
+    refresh();
+  })();
+  </script>
 </x-panel-layout>

@@ -11,8 +11,8 @@ use Symfony\Component\HttpFoundation\Response;
  * Cierra la sesión tras N minutos sin actividad (config session.idle_minutes, 15 por defecto).
  *
  * "Actividad" = peticiones que hace la persona (navegar, enviar formularios, el aviso periódico
- * /session/ping del navegador mientras interactúa). Las consultas automáticas de fondo, como el
- * "En vivo" del audit trail, NO cuentan: si no, una pantalla abandonada nunca caducaría.
+ * /session/ping del navegador mientras interactúa). Las consultas automáticas de fondo NO cuentan:
+ * si no, una pantalla abandonada nunca caducaría.
  */
 class EnforceIdleTimeout
 {
@@ -74,6 +74,6 @@ class EnforceIdleTimeout
     /** Peticiones automáticas que no demuestran que haya alguien frente a la pantalla. */
     private function isBackgroundRequest(Request $request): bool
     {
-        return $request->routeIs('audit.feed') || $request->headers->has('X-Background-Request');
+        return $request->headers->has('X-Background-Request');
     }
 }

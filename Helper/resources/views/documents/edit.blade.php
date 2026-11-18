@@ -47,6 +47,7 @@
   </div>
 
   <x-toast />
+  <x-idle-timeout />
 
   <script>
     window.__ooFailed = function () {
@@ -64,6 +65,8 @@
       config.width = '100%';
       config.height = '100%';
       config.events = {
+        // El navegador no ve el teclado dentro del editor: cada cambio del documento cuenta como actividad.
+        onDocumentStateChange: function () { if (window.HelperIdle) window.HelperIdle.mark(); },
         onError: function (e) {
           var detail = e && e.data && (e.data.errorDescription || e.data.error);
           window.toast.error(detail ? 'OnlyOffice: ' + detail : 'El editor reportó un error.');

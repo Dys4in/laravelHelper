@@ -20,20 +20,21 @@ class UserSeeder extends Seeder
         $validaciones = Area::where('name', 'Validaciones')->first();
 
         $users = [
-            ['Admin User', 'admin@gmail.com', UserRole::Admin, null],
+            ['Admin User', 'adminUser', 'admin@gmail.com', UserRole::Admin, null],
             // Verificaciones
-            ['Mod Verificaciones', 'mod@gmail.com', UserRole::Mod, $verificaciones?->id],
-            ['User Verificaciones', 'user@gmail.com', UserRole::User, $verificaciones?->id],
+            ['Mod Verificaciones', 'modVerif', 'mod@gmail.com', UserRole::Mod, $verificaciones?->id],
+            ['User Verificaciones', 'userVerif', 'user@gmail.com', UserRole::User, $verificaciones?->id],
             // Validaciones (para comprobar que cada área solo ve lo suyo)
-            ['Mod Validaciones', 'mod2@gmail.com', UserRole::Mod, $validaciones?->id],
-            ['User Validaciones', 'user2@gmail.com', UserRole::User, $validaciones?->id],
+            ['Mod Validaciones', 'modValid', 'mod2@gmail.com', UserRole::Mod, $validaciones?->id],
+            ['User Validaciones', 'userValid', 'user2@gmail.com', UserRole::User, $validaciones?->id],
         ];
 
-        foreach ($users as [$name, $email, $role, $areaId]) {
+        foreach ($users as [$name, $username, $email, $role, $areaId]) {
             $user = User::firstOrNew(['email' => $email]);
 
             $user->fill([
                 'name' => $name,
+                'username' => $username,
                 'role' => $role,
                 'status' => 'active',
                 'area_id' => $areaId,

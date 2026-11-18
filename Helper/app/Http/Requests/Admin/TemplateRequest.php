@@ -7,7 +7,12 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 
-/** Crear y editar plantillas (admin y moderador). El moderador siempre sube a su propia área; el admin elige el área. */
+/**
+ * Crear y editar plantillas (admin y moderador).
+ *  - Admin: elige el área.
+ *  - Moderador con una sola área: siempre se usa esa.
+ *  - Moderador con varias áreas: elige una de las suyas al subir (al editar no se puede mover de área).
+ */
 class TemplateRequest extends FormRequest
 {
     public function authorize(): bool
@@ -18,15 +23,20 @@ class TemplateRequest extends FormRequest
     public function rules(): array
     {
         $isUpdate = $this->route('template') !== null;
+        $user = $this->user();
+        $areaIds = $user?->areaIds() ?? [];
+
+        $mustPickArea = $user?->isAdmin() === true || (! $isUpdate && count($areaIds) > 1);
 
         return [
             'name' => ['required', 'string', 'max:150'],
             'description' => ['nullable', 'string', 'max:255'],
-            // El admin debe asignar la plantilla a un área; el moderador siempre usa la suya (se ignora lo que envíe).
             'area_id' => [
-                Rule::requiredIf(fn () => $this->user()?->hasRole('admin', 'mod') === true),
+                Rule::requiredIf($mustPickArea),
                 'nullable',
-                Rule::exists('areas', 'id')->whereNull('deleted_at'),
+                $user?->isAdmin() === true
+                    ? Rule::exists('areas', 'id')->whereNull('deleted_at')
+                    : Rule::in($areaIds ?: [0]),
             ],
             'status' => ['nullable', Rule::in(['active', 'inactive'])],
             'file' => [
@@ -51,6 +61,7 @@ class TemplateRequest extends FormRequest
             'name.required' => 'El nombre de la plantilla es obligatorio.',
             'area_id.required' => 'Selecciona el área a la que se asigna la plantilla.',
             'area_id.exists' => 'El área seleccionada no existe.',
+            'area_id.in' => 'Elige una de tus áreas.',
             'file.required' => 'Selecciona el archivo .docx de la plantilla.',
             'file.extensions' => 'Solo se permiten archivos .docx.',
             'file.max' => "El archivo supera el máximo permitido ({$limit}).",

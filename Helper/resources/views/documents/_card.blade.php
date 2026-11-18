@@ -13,7 +13,7 @@
   $canEdit = auth()->user()->can('edit', $doc);
   $canReview = auth()->user()->can('review', $doc);
   $openLabel = $canEdit ? 'Abrir en el editor' : ($canReview ? 'Revisar documento' : 'Ver documento');
-  $search = implode(' ', array_filter([$doc->code, $doc->title, $doc->user?->name, $doc->area?->name, $doc->template?->name]));
+  $search = implode(' ', array_filter([$doc->code, $doc->title, $doc->user?->name, $doc->area?->name, $doc->template_name ?: $doc->template?->name]));
 @endphp
 
 <article class="hp-card" data-doc data-id="{{ $doc->id }}" data-code="{{ $search }}" data-status="{{ $doc->status }}">
@@ -35,8 +35,8 @@
         @if ($supervise)
           <li><i class="bi bi-building" aria-hidden="true"></i><span class="truncate">{{ $doc->area?->name ?? 'Sin área' }}</span></li>
         @endif
-        @if ($doc->template)
-          <li><i class="bi bi-grid" aria-hidden="true"></i><span class="truncate">{{ $doc->template->name }}</span></li>
+        @if ($doc->template_name || $doc->template)
+          <li><i class="bi bi-grid" aria-hidden="true"></i><span class="truncate">{{ $doc->template_name ?: $doc->template->name }}</span></li>
         @endif
         <li>
           <i class="bi bi-calendar-plus" aria-hidden="true"></i>
@@ -54,14 +54,14 @@
     </a>
 
     <div class="hp-card-foot{{ $stackFoot ? ' hp-card-foot--column' : '' }}">
-      {{-- Descarga: solo documentos completados (el backend también lo exige). --}}
+      {{-- Descarga (siempre PDF): solo documentos completados, sin excepciones. --}}
       @can('download', $doc)
         <a href="{{ route('documents.download', $doc) }}" class="hp-btn-outline">
-          <i class="bi {{ 'bi-file-earmark-pdf' }}" aria-hidden="true"></i> Descargar PDF
+          <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Descargar PDF
         </a>
       @else
         <button type="button" class="hp-btn-outline" disabled title="Disponible cuando el documento esté completado">
-          <i class="bi bi-download" aria-hidden="true"></i> Descargar
+          <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Descargar PDF
         </button>
       @endcan
 

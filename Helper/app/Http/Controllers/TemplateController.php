@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * Plantillas .docx.
  *  - Usuario:       las ve y las usa ("Usar plantilla") para crear documentos.
- *  - Moderador:     además sube y administra las de su área.
+ *  - Moderador:     además sube y administra las de sus áreas (puede tener varias).
  *  - Administrador: controla las de todas las áreas.
  */
 class TemplateController extends Controller
@@ -37,7 +37,7 @@ class TemplateController extends Controller
                     $w->where('name', 'like', "%{$search}%")->orWhere('description', 'like', "%{$search}%");
                 });
             })
-            ->when($user->isAdmin() && $request->filled('area'), function ($q) use ($request) {
+            ->when($request->filled('area') && ($user->isAdmin() || $user->hasArea($request->integer('area'))), function ($q) use ($request) {
                 $request->input('area') === 'general'
                     ? $q->whereNull('area_id')
                     : $q->where('area_id', $request->integer('area'));
@@ -60,8 +60,10 @@ class TemplateController extends Controller
                 'active' => (int) ($counts[Template::ACTIVE] ?? 0),
                 'inactive' => (int) ($counts[Template::INACTIVE] ?? 0),
             ],
-            // Áreas donde se puede subir una plantilla / crear un documento
-            'formAreas' => $user->isAdmin() ? Area::active()->orderBy('name')->get() : ($user->hasRole('mod') ? Area::whereIn('id', $user->assignedAreaIds())->orderBy('name')->get() : collect()),
+            // Áreas donde se puede subir una plantilla / crear un documento (admin: todas; resto: las suyas activas)
+            'formAreas' => $user->isAdmin()
+                ? Area::active()->orderBy('name')->get()
+                : $user->assignedAreas()->filter(fn (Area $area) => ! $area->trashed() && $area->isActive())->values(),
             'newTemplate' => new Template(['status' => Template::ACTIVE]),
         ]);
     }
@@ -73,9 +75,6 @@ class TemplateController extends Controller
         $user = $request->user();
         $data = $request->validated();
         $file = $request->file('file');
-        if ($user->hasRole('mod') && ! $user->canManageArea((int) ($data['area_id'] ?? 0))) {
-            return back()->withInput()->with('error', 'No tienes permiso para subir plantillas en esa área.');
-        }
 
         $size = $file->getSize();
         $originalName = $file->getClientOriginalName();
@@ -84,8 +83,8 @@ class TemplateController extends Controller
         Template::create([
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
-            // El moderador siempre sube a su área, aunque manipule el formulario.
-            'area_id' => $data['area_id'] ?? null,
+            // El moderador solo sube a sus áreas (TemplateRequest lo valida); con una sola, no hace falta elegir.
+            'area_id' => $user->isAdmin() ? ($data['area_id'] ?? null) : (($data['area_id'] ?? null) ?: ($user->areaIds()[0] ?? null)),
             'status' => $data['status'] ?? Template::ACTIVE,
             'file_path' => $path,
             'original_name' => Str::limit($originalName, 250, ''),
@@ -105,7 +104,6 @@ class TemplateController extends Controller
             // áreas activas + la actual de la plantilla (aunque esté suspendida)
             'areas' => Area::query()
                 ->where(fn ($q) => $q->where('status', Area::ACTIVE)->orWhere('id', $template->area_id))
-                ->when(! auth()->user()->isAdmin(), fn ($q) => $q->whereIn('id', auth()->user()->assignedAreaIds()))
                 ->orderBy('name')
                 ->get(),
         ]);
@@ -118,17 +116,27 @@ class TemplateController extends Controller
         $user = $request->user();
         $data = $request->validated();
 
-        if ($user->hasRole('mod') && ! $user->canManageArea((int) ($data['area_id'] ?? 0))) {
-            return back()->withInput()->with('error', 'No tienes permiso para usar esa área.');
-        }
-
         $attributes = [
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
             // Solo el admin puede mover una plantilla de área o hacerla general.
-            'area_id' => $data['area_id'] ?? $template->area_id,
+            'area_id' => $user->isAdmin() ? ($data['area_id'] ?? null) : $template->area_id,
             'status' => $data['status'] ?? $template->status,
         ];
+
+        $description = isset($attributes['description']) ? trim((string) $attributes['description']) : null;
+        $description = $description === '' ? null : $description;
+        $currentDescription = $template->description === null ? null : trim((string) $template->description);
+
+        $unchanged = (string) $attributes['name'] === (string) $template->name
+            && $description === $currentDescription
+            && (int) ($attributes['area_id'] ?? 0) === (int) ($template->area_id ?? 0)
+            && (string) $attributes['status'] === (string) $template->status
+            && ! $request->hasFile('file');
+
+        if ($unchanged) {
+            return back()->withInput()->with('status', 'No hay cambios para guardar.');
+        }
 
         $oldPath = null;
 
@@ -142,9 +150,10 @@ class TemplateController extends Controller
 
         $template->update($attributes);
 
-        // Los documentos ya creados son copias, así que el archivo anterior ya no se necesita.
+        // Los documentos ya creados son copias, así que el archivo anterior (y su PDF) ya no se necesitan.
         if ($oldPath) {
             $oo->disk()->delete($oldPath);
+            $oo->forgetTemplatePdf($template, $oldPath);
         }
 
         return redirect()->route('templates.index')->with('status', 'Plantilla actualizada correctamente.');
@@ -171,28 +180,29 @@ class TemplateController extends Controller
         return back()->with('status', "La plantilla «{$template->name}» fue eliminada.");
     }
 
+    /** Descarga siempre en PDF (nunca el .docx). Se convierte una vez y queda guardado hasta que se reemplace el archivo. */
     public function download(Template $template, OnlyOfficeService $oo): StreamedResponse|RedirectResponse
     {
         Gate::authorize('manage', $template);
-        abort_unless($oo->disk()->exists($template->file_path), 404);
+
+        abort_unless($oo->disk()->exists($template->file_path), 404, 'El archivo de la plantilla no existe en el servidor.');
 
         try {
-            $tmp = $oo->convertToPdf($template);
+            $pdfPath = $oo->ensureTemplatePdf($template);
         } catch (\Throwable $e) {
             report($e);
-            return back()->with('error', 'No se pudo convertir la plantilla a PDF. Verifica el servicio OnlyOffice.');
+
+            return back()->with('error', 'No se pudo generar el PDF: '.$e->getMessage());
         }
 
         AuditLogger::log('template.downloaded', "Descargó la plantilla «{$template->name}» en PDF", $template);
-        return response()->streamDownload(function () use ($tmp) {
-            try {
-                $stream = fopen($tmp, 'rb');
-                if (is_resource($stream)) {
-                    fpassthru($stream);
-                    fclose($stream);
-                }
-            } finally {
-                @unlink($tmp);
+
+        return response()->streamDownload(function () use ($oo, $pdfPath) {
+            $stream = $oo->disk()->readStream($pdfPath);
+
+            if (is_resource($stream)) {
+                fpassthru($stream);
+                fclose($stream);
             }
         }, (Str::slug($template->name) ?: 'plantilla').'.pdf', ['Content-Type' => 'application/pdf']);
     }

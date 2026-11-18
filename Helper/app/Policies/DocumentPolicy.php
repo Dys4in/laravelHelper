@@ -8,10 +8,10 @@ use App\Models\User;
 /**
  * Reglas de documentos:
  *  - Usuario:       ve y edita solo SUS documentos.
- *  - Moderador:     ve los de su área; los de otros los REVISA (control de cambios); puede completarlos / reabrirlos.
+ *  - Moderador:     ve los de sus áreas (puede tener varias); los de otros los REVISA (control de cambios); puede completarlos / reabrirlos.
  *  - Administrador: ve todos; los de otros los REVISA; puede completarlos / reabrirlos.
  *  - Completado:    se abre solo en modo lectura, sin importar el usuario.
- *  - Descargar:     solo documentos COMPLETADOS (el admin siempre).
+ *  - Descargar:     solo documentos COMPLETADOS, sin excepciones.
  *  - Eliminar:      el dueño mientras esté en borrador; el admin siempre.
  */
 class DocumentPolicy
@@ -19,7 +19,7 @@ class DocumentPolicy
     /** Cualquiera con acceso a la app puede crear documentos (el admin elige el área al crearlo). */
     public function create(User $user): bool
     {
-        return $user->isAdmin() || ($user->hasRole('mod') ? count($user->assignedAreaIds()) > 0 : $user->area_id !== null);
+        return $user->isAdmin() || $user->areaIds() !== [];
     }
 
     public function view(User $user, Document $document): bool
@@ -28,7 +28,7 @@ class DocumentPolicy
             return true;
         }
 
-        return $user->canManageArea($document->area_id);
+        return $user->hasRole('mod') && $user->hasArea($document->area_id);
     }
 
     /**
@@ -58,16 +58,12 @@ class DocumentPolicy
     public function changeStatus(User $user, Document $document): bool
     {
         return $user->isAdmin()
-            || $user->canManageArea($document->area_id);
+            || ($user->hasRole('mod') && $user->hasArea($document->area_id));
     }
 
     public function download(User $user, Document $document): bool
     {
-        if (! $this->view($user, $document)) {
-            return false;
-        }
-
-        return $user->isAdmin() || $document->isCompleted();
+        return $this->view($user, $document) && $document->isCompleted();
     }
 
     public function delete(User $user, Document $document): bool

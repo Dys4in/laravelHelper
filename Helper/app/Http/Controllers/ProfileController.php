@@ -25,7 +25,13 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->update($request->validated());
+        $data = $request->validated();
+
+        if ((string) $data['name'] === (string) $request->user()->name) {
+            return Redirect::route('profile.edit')->with('status', 'profile-unchanged');
+        }
+
+        $request->user()->update($data);
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }

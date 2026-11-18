@@ -32,9 +32,21 @@ return [
     |
     */
 
-    'lifetime' => 15,
+    'lifetime' => (int) env('SESSION_LIFETIME', 120),
 
     'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cierre por inactividad
+    |--------------------------------------------------------------------------
+    |
+    | Minutos sin actividad tras los cuales se cierra la sesión (ver
+    | App\Http\Middleware\EnforceIdleTimeout y el componente <x-idle-timeout>).
+    |
+    */
+
+    'idle_minutes' => (int) env('SESSION_IDLE_MINUTES', 15),
 
     /*
     |--------------------------------------------------------------------------

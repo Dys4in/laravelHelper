@@ -16,10 +16,16 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>{{ config('app.HELPER', 'HELPER') }} | {{ $title ?? 'Panel' }}</title>
 
+  {{-- Fuente Inter sin bloquear el primer pintado (antes la hoja de Google detenía la página hasta descargarse). --}}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"></noscript>
+
+  {{-- Los iconos usan font-display:block: se precarga su fuente para que no aparezcan vacíos al cambiar de pantalla. --}}
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ asset('backend/assets/vendors/bootstrap-icons/fonts/bootstrap-icons.woff2') }}?e34853135f9e39acf64315236852cd5a">
   <link rel="stylesheet" href="{{ asset('backend/assets/vendors/bootstrap-icons/bootstrap-icons.css') }}">
+  <x-fast-nav />
   <link rel="icon" type="image/png" href="{{ asset('backend/assets/images/favicon/faviconHelper.png') }}">
 
   @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -116,7 +122,7 @@
           <div class="hidden text-right leading-tight sm:block">
             <p class="text-sm font-semibold text-gray-900">{{ $authUser->name }}</p>
             <p class="text-xs text-gray-500">
-              {{ $authUser->role->label() }}@if ($authUser->area) · {{ $authUser->area->name }}@endif
+              {{ $authUser->role->label() }}@php($areaLabel = $authUser->assignedAreas()->pluck('name')->join(', '))@if ($areaLabel !== '') · {{ $areaLabel }}@endif
             </p>
           </div>
           <form method="POST" action="{{ route('logout') }}">
@@ -137,5 +143,6 @@
   <x-select-ui />
   <x-confirm />
   <x-toast />
+  <x-idle-timeout />
 </body>
 </html>

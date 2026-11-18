@@ -1,7 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnforceIdleTimeout;
 use App\Http\Middleware\EnsureUserIsActive;
-use App\Http\Middleware\ExpireInactiveSession;
+use App\Http\Middleware\NoCache;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -22,10 +23,13 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Cierre de sesión por inactividad (después de StartSession, que ya va dentro del grupo "web").
+        $middleware->web(append: [EnforceIdleTimeout::class]);
+
         $middleware->alias([
+            'no.cache' => NoCache::class,
             'role' => RoleMiddleware::class,
             'active' => EnsureUserIsActive::class,
-            'idle' => ExpireInactiveSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

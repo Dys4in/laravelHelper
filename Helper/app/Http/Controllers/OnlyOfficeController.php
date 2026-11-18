@@ -30,13 +30,15 @@ class OnlyOfficeController extends Controller
         ]);
     }
 
-    /** Entrega privada de plantillas a OnlyOffice mediante URL firmada. */
+    /** El Document Server descarga aquí el .docx de una plantilla para convertirlo a PDF. */
     public function templateFile(Request $request, Template $template, OnlyOfficeService $oo): StreamedResponse
     {
         abort_unless($request->hasValidRelativeSignature(), 403);
-        abort_unless($template->file_path && $oo->disk()->exists($template->file_path), 404);
 
-        return $oo->disk()->response($template->file_path, 'template.docx', [
+        $disk = $oo->disk();
+        abort_unless($template->file_path && $disk->exists($template->file_path), 404);
+
+        return $disk->response($template->file_path, 'plantilla.docx', [
             'Content-Type' => OnlyOfficeService::DOCX_MIME,
             'Cache-Control' => 'no-store',
         ]);

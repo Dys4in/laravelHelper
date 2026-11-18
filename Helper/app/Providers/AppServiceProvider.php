@@ -49,7 +49,15 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(Logout::class, function (Logout $e) {
             // Los cierres forzados (cuenta bloqueada) ya se registran como login_blocked / session_revoked.
             if ($e->user && ! $e->user->accessDeniedReason()) {
-                AuditLogger::log('auth.logout', "Cerró sesión: {$e->user->email}", $e->user, actor: $e->user);
+                // Lo marca EnforceIdleTimeout cuando la sesión caduca por inactividad.
+                $idle = ! app()->runningInConsole() && request()->attributes->get('idle_logout') === true;
+
+                AuditLogger::log(
+                    $idle ? 'auth.idle_logout' : 'auth.logout',
+                    ($idle ? 'Sesión cerrada por inactividad: ' : 'Cerró sesión: ').$e->user->email,
+                    $e->user,
+                    actor: $e->user,
+                );
             }
         });
 

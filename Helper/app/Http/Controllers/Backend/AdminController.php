@@ -45,16 +45,24 @@ class AdminController extends Controller
             ],
             'days' => $days,
             'maxPerDay' => max(1, (int) $days->max('total')),
-            'areas' => Area::query()
-                ->withCount([
-                    'documents',
-                    'documents as completed_count' => fn ($q) => $q->where('status', Document::COMPLETED),
-                    'users as users_active_count' => fn ($q) => $q->where('status', 'active'),
-                ])
-                ->orderBy('name')
-                ->get(),
+            'areas' => $this->areasWithCounts(),
             'recentDocuments' => Document::query()->with(['user', 'area'])->latest()->limit(6)->get(),
             'recentActivity' => AuditLog::query()->with('area')->latest('id')->limit(8)->get(),
         ]);
+    }
+
+    /** Áreas con sus documentos y personas activas (los moderadores cuentan en todas sus áreas). */
+    private function areasWithCounts()
+    {
+        $active = Area::memberCounts(onlyActive: true);
+
+        return Area::query()
+            ->withCount([
+                'documents',
+                'documents as completed_count' => fn ($q) => $q->where('status', Document::COMPLETED),
+            ])
+            ->orderBy('name')
+            ->get()
+            ->each(fn (Area $area) => $area->setAttribute('users_active_count', $active[$area->id] ?? 0));
     }
 }
