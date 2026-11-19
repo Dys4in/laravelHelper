@@ -1,0 +1,14 @@
+{
+  "name": "HELPER Editor Bridge",
+  "guid": "asc.{F7E9AB42-83CD-4C18-9B2B-981B4B2E54F4}",
+  "version": "1.0.0",
+  "minVersion": "7.0.0",
+  "variations": [{
+    "description": "Conecta herramientas de HELPER con el editor",
+    "url": "index.html",
+    "type": "system",
+    "EditorsSupport": ["word"],
+    "isDisplayedInViewer": false,
+    "initDataType": "none"
+  }]
+}

@@ -12,7 +12,7 @@ use App\Models\User;
  *  - Administrador: ve todos; los de otros los REVISA; puede completarlos / reabrirlos.
  *  - Completado:    se abre solo en modo lectura, sin importar el usuario.
  *  - Descargar:     solo documentos COMPLETADOS, sin excepciones.
- *  - Eliminar:      el dueño mientras esté en borrador; el admin siempre.
+ *  - Eliminar:      el dueño (usuario o moderador) en cualquier estado; el admin siempre.
  */
 class DocumentPolicy
 {
@@ -68,7 +68,6 @@ class DocumentPolicy
 
     public function delete(User $user, Document $document): bool
     {
-        return $user->isAdmin()
-            || ($document->user_id === $user->id && ! $document->isCompleted());
+        return $user->isAdmin() || $document->user_id === $user->id;
     }
 }

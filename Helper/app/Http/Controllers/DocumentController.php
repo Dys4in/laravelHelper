@@ -278,7 +278,7 @@ class DocumentController extends Controller
         }, $filename.'.pdf', ['Content-Type' => 'application/pdf']);
     }
 
-    /** Eliminar: el dueño mientras esté en borrador; el admin siempre. */
+    /** Eliminar: el dueño (usuario o moderador) en cualquier estado; el admin siempre. */
     public function destroy(Document $document): RedirectResponse
     {
         Gate::authorize('delete', $document);

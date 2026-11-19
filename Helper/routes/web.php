@@ -9,8 +9,33 @@ use App\Http\Controllers\Backend\UserController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReusableContentController;
 use App\Http\Controllers\TemplateController;
 use Illuminate\Support\Facades\Route;
+
+// Archivos públicos del complemento OnlyOffice con CORS limitado al Document Server.
+// Una ruta Laravel (en vez del archivo estático) garantiza los encabezados también con "artisan serve".
+Route::get('/helper-office-assets/{file}', function (string $file) {
+    abort_unless(in_array($file, ['config.json', 'index.html', 'bridge.js'], true), 404);
+
+    $path = public_path('helper-editor-plugin/'.$file);
+    abort_unless(is_file($path), 404);
+
+    $types = [
+        'config.json' => 'application/json; charset=utf-8',
+        'index.html' => 'text/html; charset=utf-8',
+        'bridge.js' => 'application/javascript; charset=utf-8',
+    ];
+
+    return response()->file($path, [
+        'Content-Type' => $types[$file],
+        // Este es el origen real de OnlyOffice en tu Docker (puerto publicado 8081).
+        'Access-Control-Allow-Origin' => 'http://localhost:8081',
+        'Vary' => 'Origin',
+        'Cross-Origin-Resource-Policy' => 'cross-origin',
+        'Cache-Control' => 'no-store',
+    ]);
+})->name('onlyoffice.plugin.asset');
 
 Route::get('/', [HomeController::class, 'root']);
 
@@ -21,6 +46,11 @@ Route::get('/', [HomeController::class, 'root']);
 | 'active' cierra la sesión si el admin desactivó al usuario o su área.
 */
 Route::middleware(['auth', 'active'])->group(function () {
+    // Textos reutilizables del editor; aislados por usuario autenticado.
+    Route::get('/editor/reusable', [ReusableContentController::class, 'index'])->name('editor.reusable.index');
+    Route::post('/editor/reusable', [ReusableContentController::class, 'store'])->name('editor.reusable.store');
+    Route::delete('/editor/reusable/{reusableContent}', [ReusableContentController::class, 'destroy'])->name('editor.reusable.destroy');
+
     // Punto de entrada único: el admin va a su dashboard; moderador y usuario, a "Mis documentos".
     Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
 

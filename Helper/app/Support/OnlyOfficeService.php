@@ -132,6 +132,24 @@ class OnlyOfficeService
             ],
         ];
 
+        // Complemento de herramientas del editor (se incorpora antes de firmar el JWT).
+        // Se omite en modo lectura para respetar permisos.
+        if ($mode !== 'view') {
+            $config['editorConfig']['plugins'] = array_merge(
+                $config['editorConfig']['plugins'] ?? [],
+                [
+                    'pluginsData' => array_values(array_unique(array_merge(
+                        $config['editorConfig']['plugins']['pluginsData'] ?? [],
+                        [route('onlyoffice.plugin.asset', ['file' => 'config.json'])]
+                    ))),
+                    'autostart' => array_values(array_unique(array_merge(
+                        $config['editorConfig']['plugins']['autostart'] ?? [],
+                        ['asc.{F7E9AB42-83CD-4C18-9B2B-981B4B2E54F4}']
+                    ))),
+                ]
+            );
+        }
+
         if (config('onlyoffice.jwt_enabled')) {
             $config['token'] = Jwt::encode($config, $this->secret());
         }

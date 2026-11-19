@@ -9,7 +9,7 @@
   $actionCount = 1
       + (auth()->user()->can('changeStatus', $doc) ? 1 : 0)
       + (auth()->user()->can('delete', $doc) ? 1 : 0);
-  $stackFoot = $supervise ? $actionCount !== 3 : $done;
+  $stackFoot = $supervise ? $actionCount !== 3 : ($done && $actionCount !== 3);
   $canEdit = auth()->user()->can('edit', $doc);
   $canReview = auth()->user()->can('review', $doc);
   $openLabel = $canEdit ? 'Abrir en el editor' : ($canReview ? 'Revisar documento' : 'Ver documento');
@@ -80,7 +80,7 @@
         </form>
       @endcan
 
-      {{-- Eliminar: solo borradores. --}}
+      {{-- Eliminar: documentos propios en cualquier estado (o cualquier documento si es admin). --}}
       @can('delete', $doc)
         <form method="POST" action="{{ route('documents.destroy', $doc) }}"
               data-confirm="Se eliminará «{{ $doc->title }}» ({{ $doc->code }}) y su archivo. Esta acción no se puede deshacer."
