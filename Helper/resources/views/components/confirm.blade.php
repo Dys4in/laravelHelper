@@ -6,7 +6,7 @@
           data-confirm="Texto de la pregunta"
           data-confirm-title="Título"            (opcional)
           data-confirm-text="Texto del botón"    (opcional, por defecto "Confirmar")
-          data-confirm-variant="danger|warning|primary"   (opcional, por defecto primary)
+          data-confirm-variant="danger|warning|primary|primary-outline"   (opcional, por defecto primary)
           data-confirm-phrase="eliminar">        (opcional: exige escribir esa palabra)
 
   Uso desde JavaScript (devuelve una promesa con true/false):
@@ -19,13 +19,16 @@
 
   // Clases completas (no concatenar) para que Tailwind las detecte.
   var VARIANTS = {
-    danger:  { wrap: 'bg-red-100 text-red-600',     btn: 'bg-red-600 hover:bg-red-700 focus-visible:ring-red-300',
+    danger:  { wrap: 'bg-red-100 text-red-600',     btn: 'border-red-300 bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-300',
       path: 'M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0' },
-    warning: { wrap: 'bg-amber-100 text-amber-600', btn: 'bg-amber-600 hover:bg-amber-700 focus-visible:ring-amber-300',
-      path: 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z' },
-    primary: { wrap: 'bg-brand-soft text-brand',    btn: 'bg-brand hover:brightness-110 focus-visible:ring-indigo-300',
+    warning: { wrap: 'bg-amber-100 text-amber-600', btn: 'border-amber-300 bg-amber-600 text-white hover:bg-amber-700 focus-visible:ring-amber-300',
+      path: 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866 1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z' },
+    primary: { wrap: 'bg-brand-soft text-brand',    btn: 'border-brand bg-brand text-white hover:brightness-110 focus-visible:ring-indigo-300',
+      path: 'M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z' },
+    'primary-outline': { wrap: 'bg-gray-100 text-gray-600', btn: 'border-line bg-white text-gray-600 hover:border-brand hover:bg-brand-soft hover:text-brand focus-visible:ring-gray-300',
       path: 'M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z' }
   };
+  var BTN = 'inline-flex h-10 w-full items-center justify-center whitespace-nowrap rounded-xl border px-4 text-[13px] font-semibold transition focus:outline-none focus-visible:ring-2 sm:w-auto sm:min-w-[7.5rem]';
   var SVG = 'http://www.w3.org/2000/svg';
   var open = false;
 
@@ -95,10 +98,10 @@
         panel.appendChild(phraseBox);
       }
 
-      var foot = el('div', 'mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end');
-      var cancel = el('button', 'rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300', opts.cancelText || 'Cancelar');
+      var foot = el('div', 'mt-6 flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 sm:flex-row sm:justify-end');
+      var cancel = el('button', BTN + ' border-line bg-white text-gray-600 hover:border-brand hover:bg-brand-soft hover:text-brand focus-visible:ring-gray-300', opts.cancelText || 'Cancelar');
       cancel.type = 'button';
-      var okClasses = 'rounded-lg px-4 py-2 text-sm font-semibold text-white transition focus:outline-none focus-visible:ring-2 ' + v.btn;
+      var okClasses = BTN + ' ' + v.btn;
       if (opts.phrase) okClasses += ' disabled:cursor-not-allowed disabled:opacity-50';
       var ok = el('button', okClasses, opts.confirmText || 'Confirmar');
       ok.type = 'button';

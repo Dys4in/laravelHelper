@@ -74,7 +74,7 @@ class Document extends Model
     }
 
     /**
-     * Documentos que el usuario supervisa: el admin, todos; el moderador, los de sus áreas.
+     * Documentos que el usuario supervisa: el admin, todos; el coordinador, los de sus áreas.
      * Los usuarios normales no supervisan nada (no ven documentos ajenos).
      */
     public function scopeSupervisedBy(Builder $query, User $user): Builder
@@ -83,7 +83,7 @@ class Document extends Model
             return $query;
         }
 
-        // Moderador: los documentos de TODAS sus áreas activas.
+        // Coordinador: los documentos de TODAS sus áreas activas.
         if ($user->hasRole('mod')) {
             return $query->whereIn('area_id', $user->areaIds() ?: [0]);
         }

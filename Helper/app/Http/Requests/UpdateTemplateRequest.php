@@ -8,7 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
-/** Editar una plantilla: moderador (de su área) o administrador. Solo el administrador puede cambiarla de área. */
+/** Editar una plantilla: coordinador (de su área) o administrador. Solo el administrador puede cambiarla de área. */
 class UpdateTemplateRequest extends FormRequest
 {
     public function authorize(): bool

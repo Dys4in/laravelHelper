@@ -61,4 +61,6 @@
   </section>
 
   {{ $documents->links() }}
+
+  @include('documents._rename-modal')
 </x-panel-layout>

@@ -17,7 +17,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * Plantillas .docx.
  *  - Usuario:       las ve y las usa ("Usar plantilla") para crear documentos.
- *  - Moderador:     además sube y administra las de sus áreas (puede tener varias).
+ *  - Coordinador:   además sube y administra las de sus áreas (puede tener varias).
  *  - Administrador: controla las de todas las áreas.
  */
 class TemplateController extends Controller
@@ -83,7 +83,7 @@ class TemplateController extends Controller
         Template::create([
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
-            // El moderador solo sube a sus áreas (TemplateRequest lo valida); con una sola, no hace falta elegir.
+            // El coordinador solo sube a sus áreas (TemplateRequest lo valida); con una sola, no hace falta elegir.
             'area_id' => $user->isAdmin() ? ($data['area_id'] ?? null) : (($data['area_id'] ?? null) ?: ($user->areaIds()[0] ?? null)),
             'status' => $data['status'] ?? Template::ACTIVE,
             'file_path' => $path,

@@ -48,4 +48,6 @@
 
     <div class="hp-empty" data-no-results hidden>No se encontraron documentos para tu búsqueda.</div>
   </section>
+
+  @include('documents._rename-modal')
 </x-panel-layout>

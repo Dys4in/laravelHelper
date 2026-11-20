@@ -15,7 +15,7 @@ class AdminAreaController extends Controller
         $members = Area::memberCounts();
 
         return view('admin.areas.index', [
-            // users_count incluye a los moderadores que tienen el área entre las suyas.
+            // users_count incluye a los coordinadores que tienen el área entre las suyas.
             'areas' => Area::orderBy('name')->get()->each(
                 fn (Area $area) => $area->setAttribute('users_count', $members[$area->id] ?? 0)
             ),

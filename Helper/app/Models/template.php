@@ -60,7 +60,7 @@ class Template extends Model
     /**
      * Plantillas que el usuario ve en la pantalla "Plantillas".
      *  - Admin: todas.
-     *  - Moderador: las de sus áreas (activas o no, para administrarlas) y las generales activas.
+     *  - Coordinador: las de sus áreas (activas o no, para administrarlas) y las generales activas.
      *  - Usuario: solo las activas de su área y las generales.
      */
     public function scopeVisibleTo(Builder $query, User $user): Builder

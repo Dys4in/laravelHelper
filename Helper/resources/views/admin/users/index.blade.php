@@ -110,7 +110,7 @@
 
   {{-- Ventana: Nuevo usuario --}}
   <x-app-modal id="create-user" title="Nuevo usuario" description="Solo el administrador crea cuentas. Elige su rol y su área." size="xl">
-    <form method="POST" action="{{ route('admin.users.store') }}" class="space-y-6" autocomplete="off">
+    <form id="create-user-form" method="POST" action="{{ route('admin.users.store') }}" class="space-y-6" autocomplete="off">
       @csrf
       <input type="hidden" name="_modal" value="create-user">
       @include('admin.users._form', ['user' => $newUser, 'areas' => $formAreas, 'roles' => $roles, 'modalId' => 'create-user'])
@@ -121,6 +121,31 @@
       </div>
     </form>
   </x-app-modal>
+
+  <script>
+    (function () {
+      var form = document.getElementById('create-user-form');
+      if (!form) return;
+      var role = form.querySelector('[data-role-select]');
+      if (!role) return;
+
+      function syncAdminConfirm() {
+        if (role.value === 'admin') {
+          form.setAttribute('data-confirm', 'Este usuario tendrá acceso total al sistema, incluida la creación de otros administradores.');
+          form.setAttribute('data-confirm-title', 'Crear administrador');
+          form.setAttribute('data-confirm-text', 'Crear administrador');
+          form.setAttribute('data-confirm-variant', 'warning');
+        } else {
+          ['data-confirm', 'data-confirm-title', 'data-confirm-text', 'data-confirm-variant'].forEach(function (attr) {
+            form.removeAttribute(attr);
+          });
+        }
+      }
+
+      role.addEventListener('change', syncAdminConfirm);
+      syncAdminConfirm();
+    })();
+  </script>
 
   {{-- Ventanas: Editar usuario --}}
   @foreach ($users as $u)

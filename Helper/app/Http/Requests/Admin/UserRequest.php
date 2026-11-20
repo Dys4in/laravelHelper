@@ -42,7 +42,7 @@ class UserRequest extends FormRequest
                 'nullable',
                 Rule::exists('areas', 'id')->whereNull('deleted_at'),
             ],
-            // Moderador: una o varias áreas (la primera que se marque queda como principal).
+            // Coordinador: una o varias áreas (la primera que se marque queda como principal).
             'areas' => [
                 Rule::requiredIf(fn () => $this->input('role') === UserRole::Mod->value),
                 'nullable',
@@ -66,7 +66,7 @@ class UserRequest extends FormRequest
             'role.required' => 'Selecciona un rol.',
             'area_id.required' => 'Asigna un área al usuario.',
             'area_id.exists' => 'El área seleccionada no existe.',
-            'areas.required' => 'Asigna al menos un área al moderador.',
+            'areas.required' => 'Asigna al menos un área al coordinador.',
             'areas.*.exists' => 'Una de las áreas seleccionadas no existe.',
             'password.required' => 'La contraseña es obligatoria.',
             'password.confirmed' => 'La confirmación de contraseña no coincide.',

@@ -66,7 +66,7 @@ test('only drafts can be deleted, and only by the author or an admin', function 
         ->and(Storage::disk(config('onlyoffice.disk'))->exists($draft->file_path))->toBeFalse();
 });
 
-test('the supervision module is closed to plain users and scoped to the moderator area', function () {
+test('the supervision module is closed to plain users and scoped to the coordinator area', function () {
     $user = makeUser(UserRole::User, $this->area);
     $mod = makeUser(UserRole::Mod, $this->area);
     $foreign = makeDoc(makeUser(UserRole::User, $this->other));
@@ -90,6 +90,39 @@ test('users only see active templates assigned to their area', function () {
 
     expect($ids)->toBe([$mine->id]);
     $this->actingAs($user)->post(route('templates.store'), ['name' => 'x'])->assertForbidden();
+});
+
+test('the owner can rename a document but another user cannot', function () {
+    $user = makeUser(UserRole::User, $this->area);
+    $peer = makeUser(UserRole::User, $this->area);
+    $doc = makeDoc($user, 'completed');
+
+    $this->actingAs($peer)->patch(route('documents.rename'), [
+        'document_id' => $doc->id, 'title' => 'Ajeno',
+    ])->assertForbidden();
+
+    $this->actingAs($user)->patch(route('documents.rename'), [
+        'document_id' => $doc->id, 'title' => '  Informe final  ',
+    ])->assertRedirect();
+
+    expect($doc->fresh()->title)->toBe('Informe final');
+});
+
+test('a coordinator can rename documents of their area', function () {
+    $owner = makeUser(UserRole::User, $this->area);
+    $coordinator = makeUser(UserRole::Mod, $this->area);
+    $other = makeUser(UserRole::Mod, $this->other);
+    $doc = makeDoc($owner);
+
+    $this->actingAs($other)->patch(route('documents.rename'), [
+        'document_id' => $doc->id, 'title' => 'Ajeno',
+    ])->assertForbidden();
+
+    $this->actingAs($coordinator)->patch(route('documents.rename'), [
+        'document_id' => $doc->id, 'title' => 'Revisado',
+    ])->assertRedirect();
+
+    expect($doc->fresh()->title)->toBe('Revisado');
 });
 
 test('remember me keeps the email in a cookie and unchecked forgets it', function () {

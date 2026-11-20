@@ -11,7 +11,7 @@
   $val = fn (string $key, $default = null) => $mine ? old($key, $default) : $default;
   $err = fn (string $key) => $mine ? $errors->first($key) : '';
   $me = auth()->user();
-  // El admin elige el área; un moderador con varias áreas la elige al subir (al editar no se puede mover).
+  // El admin elige el área; un coordinador con varias áreas la elige al subir (al editar no se puede mover).
   $pickArea = $me->isAdmin() || (! $isEdit && $areas->count() > 1);
 @endphp
 

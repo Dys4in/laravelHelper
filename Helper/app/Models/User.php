@@ -56,7 +56,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Áreas del moderador (todas, incluida la principal). Para el resto de roles esta tabla no se usa:
+     * Áreas del coordinador (todas, incluida la principal). Para el resto de roles esta tabla no se usa:
      * ver assignedAreas() para obtener las áreas de cualquier usuario.
      */
     public function areas(): BelongsToMany
@@ -68,7 +68,7 @@ class User extends Authenticatable
 
     /**
      * Todas las áreas asignadas (activas o no, incluso eliminadas), ordenadas por nombre.
-     *  - Moderador: su área principal (area_id) + las de la tabla area_user.
+     *  - Coordinador: su área principal (area_id) + las de la tabla area_user.
      *  - Usuario / administrador: solo area_id.
      *
      * @return Collection<int, Area>
@@ -180,7 +180,7 @@ class User extends Authenticatable
             return 'Tu cuenta está desactivada. Contacta al administrador.';
         }
 
-        // Salvo los administradores, hace falta al menos un área activa (un moderador puede tener varias).
+        // Salvo los administradores, hace falta al menos un área activa (un coordinador puede tener varias).
         if (! $this->isAdmin() && $this->areaIds() === []) {
             return 'Tu área está suspendida o no tienes un área asignada. Contacta al administrador.';
         }

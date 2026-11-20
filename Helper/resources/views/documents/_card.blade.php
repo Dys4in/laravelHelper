@@ -24,7 +24,18 @@
     </div>
 
     <div class="hp-card-details">
-      <p class="hp-card-title" title="{{ $doc->title }}">{{ $doc->title }}</p>
+      <div class="flex items-start gap-1.5">
+        <p class="hp-card-title min-w-0 flex-1" title="{{ $doc->title }}">{{ $doc->title }}</p>
+        @can('rename', $doc)
+          <button type="button" class="shrink-0 rounded-lg p-1 text-gray-400 transition hover:bg-brand-soft hover:text-brand"
+                  data-modal-open="rename-document"
+                  data-fill-document_id="{{ $doc->id }}"
+                  data-fill-title="{{ $doc->title }}"
+                  title="Cambiar nombre" aria-label="Cambiar nombre del documento">
+            <i class="bi bi-pencil" aria-hidden="true"></i>
+          </button>
+        @endcan
+      </div>
       <p class="truncate text-[11px] font-semibold uppercase tracking-wide text-gray-400">{{ $doc->code }}</p>
 
       <ul class="hp-card-meta">

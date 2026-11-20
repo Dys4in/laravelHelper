@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Un moderador puede tener varias áreas. users.area_id sigue siendo su área principal
-     * (la que se usa por defecto) y esta tabla guarda TODAS las áreas del moderador.
+     * Un coordinador puede tener varias áreas. users.area_id sigue siendo su área principal
+     * (la que se usa por defecto) y esta tabla guarda TODAS las áreas del coordinador.
      * Para usuarios y administradores no cambia nada: siguen usando solo users.area_id.
      */
     public function up(): void
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->unique(['user_id', 'area_id']);
         });
 
-        // Los moderadores que ya existen conservan su área actual.
+        // Los coordinadores que ya existen conservan su área actual.
         $now = now();
 
         DB::table('users')

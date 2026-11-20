@@ -78,7 +78,7 @@ class OnlyOfficeService
     /**
      * Configuración que recibe DocsAPI.DocEditor en el navegador (ya firmada con JWT).
      *
-     * @param  string  $mode  'edit' = el creador edita · 'review' = control de cambios (moderador/admin) · 'view' = solo lectura
+     * @param  string  $mode  'edit' = el creador edita · 'review' = control de cambios (coordinador/admin) · 'view' = solo lectura
      * @return array<string, mixed>
      */
     public function editorConfig(Document $document, User $user, string $mode = 'edit'): array

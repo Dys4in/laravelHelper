@@ -22,7 +22,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocumentController extends Controller
 {
-    /** "Mis documentos": los que creó el usuario. Es la pantalla de inicio de usuarios y moderadores. */
+    /** "Mis documentos": los que creó el usuario. Es la pantalla de inicio de usuarios y coordinadores. */
     public function index(Request $request): View
     {
         return view('documents.index', [
@@ -35,7 +35,7 @@ class DocumentController extends Controller
     }
 
     /**
-     * Supervisión: moderador = documentos de sus áreas; administrador = todos.
+     * Supervisión: coordinador = documentos de sus áreas; administrador = todos.
      * Solo supervisa; no se crean documentos desde aquí.
      */
     public function supervision(Request $request): View
@@ -65,7 +65,7 @@ class DocumentController extends Controller
 
         return view('documents.supervision', [
             'documents' => $documents,
-            // Lista del filtro «área»: el admin ve todas; el moderador, las suyas (solo si tiene más de una).
+            // Lista del filtro «área»: el admin ve todas; el coordinador, las suyas (solo si tiene más de una).
             'areas' => $user->isAdmin()
                 ? Area::orderBy('name')->get()
                 : $user->assignedAreas()->filter(fn (Area $area) => ! $area->trashed() && $area->isActive())->values(),
@@ -95,7 +95,7 @@ class DocumentController extends Controller
         $user = $request->user();
         $areaIds = $user->areaIds();
 
-        // El admin y el moderador con varias áreas eligen en cuál se crea el documento.
+        // El admin y el coordinador con varias áreas eligen en cuál se crea el documento.
         $mustPickArea = $user->isAdmin() || count($areaIds) > 1;
 
         if (Document::limitReachedFor($user)) {
@@ -131,7 +131,7 @@ class DocumentController extends Controller
         $disk = $oo->disk();
 
         if (! $disk->exists($template->file_path)) {
-            return back()->withInput()->with('error', 'El archivo de la plantilla no se encontró en el servidor. Avisa al moderador de tu área.');
+            return back()->withInput()->with('error', 'El archivo de la plantilla no se encontró en el servidor. Avisa al coordinador de tu área.');
         }
 
         // El nombre de la plantilla queda fijo al usarla; lo que escriba el usuario se añade al final.
@@ -172,11 +172,36 @@ class DocumentController extends Controller
         return redirect()->route('documents.edit', $document)->with('status', 'Documento creado a partir de la plantilla.');
     }
 
+    /** Cambia solo el nombre visible del documento; el archivo y su contenido no se tocan. */
+    public function rename(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'document_id' => ['required', 'integer', 'exists:documents,id'],
+            'title' => ['required', 'string', 'max:150'],
+        ], [
+            'title.required' => 'Escribe el nombre del documento.',
+            'title.max' => 'El nombre no puede superar los 150 caracteres.',
+        ]);
+
+        $document = Document::findOrFail((int) $data['document_id']);
+        Gate::authorize('rename', $document);
+
+        $title = trim($data['title']);
+
+        if ($title === $document->title) {
+            return back()->with('status', 'No hay cambios para guardar.');
+        }
+
+        $document->update(['title' => $title]); // AuditObserver anota el cambio de "title"
+
+        return back()->with('status', 'Nombre del documento actualizado.');
+    }
+
     /**
      * Abre el documento en OnlyOffice. El modo depende de quién entra:
      *  - completado        → solo lectura, para cualquier usuario
      *  - el creador        → edición
-     *  - moderador / admin → revisión (control de cambios), si no son el creador
+     *  - coordinador / admin → revisión (control de cambios), si no son el creador
      */
     public function edit(Request $request, Document $document, OnlyOfficeService $oo): View|RedirectResponse
     {
@@ -219,7 +244,7 @@ class DocumentController extends Controller
         ]);
     }
 
-    /** Completar / reabrir: moderador (de su área) y administrador. */
+    /** Completar / reabrir: coordinador (de su área) y administrador. */
     public function toggleStatus(Request $request, Document $document, OnlyOfficeService $oo): RedirectResponse
     {
         Gate::authorize('changeStatus', $document);
@@ -278,7 +303,7 @@ class DocumentController extends Controller
         }, $filename.'.pdf', ['Content-Type' => 'application/pdf']);
     }
 
-    /** Eliminar: el dueño (usuario o moderador) en cualquier estado; el admin siempre. */
+    /** Eliminar: el dueño (usuario o coordinador) en cualquier estado; el admin siempre. */
     public function destroy(Document $document): RedirectResponse
     {
         Gate::authorize('delete', $document);

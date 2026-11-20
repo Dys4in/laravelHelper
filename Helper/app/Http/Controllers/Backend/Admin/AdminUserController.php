@@ -38,7 +38,7 @@ class AdminUserController extends Controller
                 });
             })
             ->when($request->filled('area'), fn ($q) => $q->where(function ($w) use ($request) {
-                // Incluye a los moderadores que tienen esa área entre las suyas.
+                // Incluye a los coordinadores que tienen esa área entre las suyas.
                 $w->where('area_id', $request->integer('area'))
                     ->orWhereIn('id', fn ($sub) => $sub->from('area_user')->select('user_id')->where('area_id', $request->integer('area')));
             }))
@@ -122,7 +122,7 @@ class AdminUserController extends Controller
             $user->areas()->sync($areaIds);
         });
 
-        // El registro automático (AuditObserver) no ve la tabla area_user: los cambios de áreas del moderador se anotan aquí.
+        // El registro automático (AuditObserver) no ve la tabla area_user: los cambios de áreas del coordinador se anotan aquí.
         $user->forgetAreaCache();
         $after = $user->assignedAreas()->pluck('name')->join(', ');
 
@@ -148,7 +148,7 @@ class AdminUserController extends Controller
 
     /**
      * Área principal (users.area_id) y lista completa de áreas (tabla area_user) según el rol:
-     *  - Moderador: todas las marcadas; la principal es la que ya tenía (si sigue marcada) o la primera.
+     *  - Coordinador: todas las marcadas; la principal es la que ya tenía (si sigue marcada) o la primera.
      *  - Usuario / administrador: solo area_id y sin áreas extra.
      *
      * @param  array<string, mixed>  $data  Datos validados del formulario.

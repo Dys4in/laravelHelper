@@ -51,7 +51,7 @@ class AdminController extends Controller
         ]);
     }
 
-    /** Áreas con sus documentos y personas activas (los moderadores cuentan en todas sus áreas). */
+    /** Áreas con sus documentos y personas activas (los coordinadores cuentan en todas sus áreas). */
     private function areasWithCounts()
     {
         $active = Area::memberCounts(onlyActive: true);

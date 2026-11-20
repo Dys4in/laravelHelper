@@ -60,7 +60,7 @@
   </div>
 
   <div class="sm:col-span-2" data-area-multi @if (! $isMod) hidden @endif>
-    <label for="{{ $p }}areas" class="hp-label">Áreas del moderador *</label>
+    <label for="{{ $p }}areas" class="hp-label">Áreas del coordinador *</label>
     <div class="relative">
       <button id="{{ $p }}areas" type="button" data-area-multi-toggle data-click-guard-ignore
               aria-haspopup="true" aria-expanded="false" {{ $invalid('areas') }}
@@ -75,7 +75,7 @@
           <input type="text" data-area-multi-search aria-label="Buscar área" placeholder="Buscar área..."
                  class="w-full rounded-lg border border-gray-200 px-3 py-1.5 text-[13px] text-gray-900 placeholder-gray-400 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand">
         </div>
-        <div class="max-h-60 overflow-y-auto p-1" role="group" aria-label="Áreas del moderador">
+        <div class="max-h-60 overflow-y-auto p-1" role="group" aria-label="Áreas del coordinador">
           @foreach ($areas as $area)
             <label class="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-gray-700 transition hover:bg-gray-100" data-area-option>
               <input type="checkbox" name="areas[]" value="{{ $area->id }}" data-area-checkbox
@@ -88,7 +88,7 @@
         <p class="border-t border-gray-100 px-3 py-2 text-[11px] text-gray-500">La primera área marcada será la principal.</p>
       </div>
     </div>
-    @if ($e = $err('areas'))<p class="hp-error">{{ $e }}</p>@elseif ($e = $err('areas.0'))<p class="hp-error">{{ $e }}</p>@else<p class="hp-help">Marca una o varias áreas para este moderador.</p>@endif
+    @if ($e = $err('areas'))<p class="hp-error">{{ $e }}</p>@elseif ($e = $err('areas.0'))<p class="hp-error">{{ $e }}</p>@else<p class="hp-help">Marca una o varias áreas para este coordinador.</p>@endif
   </div>
 
   <div class="sm:col-span-2 grid gap-4 sm:grid-cols-2">

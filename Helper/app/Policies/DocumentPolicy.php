@@ -8,11 +8,12 @@ use App\Models\User;
 /**
  * Reglas de documentos:
  *  - Usuario:       ve y edita solo SUS documentos.
- *  - Moderador:     ve los de sus áreas (puede tener varias); los de otros los REVISA (control de cambios); puede completarlos / reabrirlos.
+ *  - Coordinador:   ve los de sus áreas (puede tener varias); los de otros los REVISA (control de cambios); puede completarlos / reabrirlos.
  *  - Administrador: ve todos; los de otros los REVISA; puede completarlos / reabrirlos.
  *  - Completado:    se abre solo en modo lectura, sin importar el usuario.
  *  - Descargar:     solo documentos COMPLETADOS, sin excepciones.
- *  - Eliminar:      el dueño (usuario o moderador) en cualquier estado; el admin siempre.
+ *  - Renombrar:     el dueño, el coordinador de su área o el admin, en cualquier estado.
+ *  - Eliminar:      el dueño (usuario o coordinador) en cualquier estado; el admin siempre.
  */
 class DocumentPolicy
 {
@@ -33,7 +34,7 @@ class DocumentPolicy
 
     /**
      * Editar: solo el CREADOR del documento y mientras no esté completado.
-     * Moderador y administrador que no son el creador no editan: revisan (ver review()).
+     * Coordinador y administrador que no son el creador no editan: revisan (ver review()).
      */
     public function edit(User $user, Document $document): bool
     {
@@ -43,7 +44,7 @@ class DocumentPolicy
     }
 
     /**
-     * Revisar (control de cambios): moderador o administrador que NO son el creador, mientras no esté completado.
+     * Revisar (control de cambios): coordinador o administrador que NO son el creador, mientras no esté completado.
      * Sus cambios quedan como sugerencias que el creador acepta o rechaza.
      */
     public function review(User $user, Document $document): bool
@@ -64,6 +65,12 @@ class DocumentPolicy
     public function download(User $user, Document $document): bool
     {
         return $this->view($user, $document) && $document->isCompleted();
+    }
+
+    /** Renombrar no toca el contenido: puede hacerlo quien puede ver el documento, incluso completado. */
+    public function rename(User $user, Document $document): bool
+    {
+        return $this->view($user, $document);
     }
 
     public function delete(User $user, Document $document): bool

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
-/** Cálculos que comparten los tres dashboards (usuario, moderador y administrador). */
+/** Cálculos que comparten los tres dashboards (usuario, coordinador y administrador). */
 trait BuildsDashboard
 {
     /**

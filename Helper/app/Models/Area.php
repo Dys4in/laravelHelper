@@ -23,14 +23,14 @@ class Area extends Model
         return $this->hasMany(User::class);
     }
 
-    /** Moderadores que tienen esta área entre las suyas (además de los usuarios cuya área principal es esta). */
-    public function moderators(): BelongsToMany
+    /** Coordinadores que tienen esta área entre las suyas (además de los usuarios cuya área principal es esta). */
+    public function coordinators(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
     }
     /**
      * Personas asignadas al área: las que la tienen como área principal (users.area_id)
-     * más los moderadores que la tienen entre sus áreas (area_user). Nadie se cuenta dos veces.
+     * más los coordinadores que la tienen entre sus áreas (area_user). Nadie se cuenta dos veces.
      */
     public function assignedUsersCount(): int
     {

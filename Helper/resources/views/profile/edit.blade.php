@@ -1,3 +1,5 @@
+@php($areas = $user->assignedAreas())
+
 <x-panel-layout title="Mi perfil">
   <header class="flex flex-col gap-1">
     <p class="hp-overview-sub">Consulta los datos de tu cuenta y actualiza tu información personal.</p>
@@ -13,7 +15,7 @@
 
         <div class="min-w-0 flex-1 pt-1">
           <p class="truncate text-lg font-bold text-gray-900">{{ $user->short_name }}</p>
-          <p class="truncate text-sm font-medium text-gray-600">{{ $user->name }}</p>
+          <p class="break-words text-sm font-medium text-gray-600">{{ $user->name }}</p>
           <p class="truncate text-sm text-gray-500">{{ $user->email }}</p>
         </div>
       </div>
@@ -28,12 +30,22 @@
             <dd class="text-sm font-semibold text-gray-900">{{ $user->role->label() }}</dd>
           </div>
 
-          <div class="flex items-center justify-between gap-4 py-4">
+          <div class="flex items-start justify-between gap-4 py-4">
             <dt class="flex items-center gap-2 text-sm text-gray-500">
               <i class="bi bi-diagram-3 text-base text-brand" aria-hidden="true"></i>
-              {{ $user->assignedAreas()->count() > 1 ? 'Áreas' : 'Área' }}
+              {{ $areas->count() > 1 ? 'Áreas' : 'Área' }}
             </dt>
-            <dd class="truncate text-sm font-semibold text-gray-900">{{ $user->assignedAreas()->pluck('name')->join(', ') ?: 'Sin área' }}</dd>
+            @if ($areas->isEmpty())
+              <dd class="text-sm font-semibold text-gray-900">Sin área</dd>
+            @elseif ($areas->count() === 1)
+              <dd class="text-right text-sm font-semibold text-gray-900">{{ $areas->first()->name }}</dd>
+            @else
+              <dd class="flex max-w-[65%] flex-wrap justify-end gap-1.5">
+                @foreach ($areas as $area)
+                  <span class="rounded-full bg-brand-soft px-2.5 py-1 text-xs font-semibold text-brand">{{ $area->name }}</span>
+                @endforeach
+              </dd>
+            @endif
           </div>
 
           <div class="flex items-center justify-between gap-4 py-4">

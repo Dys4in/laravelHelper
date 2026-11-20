@@ -7,7 +7,7 @@ use App\Rules\ValidDocx;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 
-/** Subir una plantilla nueva: solo el moderador (queda asignada a SU área). */
+/** Subir una plantilla nueva: solo el coordinador (queda asignada a SU área). */
 class StoreTemplateRequest extends FormRequest
 {
     public function authorize(): bool

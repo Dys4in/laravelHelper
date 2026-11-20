@@ -31,7 +31,7 @@ function docIn(Area $area): Document
     ]);
 }
 
-it('lets a moderator supervise every one of their areas and nothing else', function () {
+it('lets a coordinator supervise every one of their areas and nothing else', function () {
     $mod = modWith($this->a, $this->b);
 
     expect($mod->can('view', docIn($this->a)))->toBeTrue()

@@ -51,7 +51,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::post('/editor/reusable', [ReusableContentController::class, 'store'])->name('editor.reusable.store');
     Route::delete('/editor/reusable/{reusableContent}', [ReusableContentController::class, 'destroy'])->name('editor.reusable.destroy');
 
-    // Punto de entrada único: el admin va a su dashboard; moderador y usuario, a "Mis documentos".
+    // Punto de entrada único: el admin va a su dashboard; coordinador y usuario, a "Mis documentos".
     Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
 
     // El navegador lo llama mientras la persona interactúa, para que el servidor sepa que sigue activa.
@@ -64,13 +64,14 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('/documents/create', [DocumentController::class, 'create'])->name('documents.create'); // redirige a Plantillas
     Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
+    Route::patch('/documents/rename', [DocumentController::class, 'rename'])->name('documents.rename');
     Route::get('/documents/{document}/edit', [DocumentController::class, 'edit'])->name('documents.edit');
     Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
     Route::patch('/documents/{document}/status', [DocumentController::class, 'toggleStatus'])->name('documents.status');
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 
     // Plantillas: todos las ven y las usan; subir / editar / activar / eliminar lo limita TemplatePolicy
-    // (moderador: las de su área · administrador: todas).
+    // (coordinador: las de su área · administrador: todas).
     Route::resource('templates', TemplateController::class)->except(['show', 'create']);
     Route::patch('templates/{template}/status', [TemplateController::class, 'toggleStatus'])->name('templates.status');
     Route::get('templates/{template}/download', [TemplateController::class, 'download'])->name('templates.download');
@@ -80,9 +81,9 @@ Route::middleware(['auth', 'active'])->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Moderador y Administrador: supervisión de documentos
+| Coordinador y Administrador: supervisión de documentos
 |--------------------------------------------------------------------------
-| Moderador = documentos de su área · Administrador = todos.
+| Coordinador = documentos de su área · Administrador = todos.
 */
 Route::middleware(['auth', 'active', 'role:admin,mod'])->group(function () {
     Route::get('/supervision', [DocumentController::class, 'supervision'])->name('supervision.index');

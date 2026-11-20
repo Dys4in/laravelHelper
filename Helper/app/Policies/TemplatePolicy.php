@@ -8,7 +8,7 @@ use App\Models\User;
 /**
  * Plantillas:
  *  - Todos los usuarios ven las de su área para crear documentos con "Usar plantilla".
- *  - El moderador sube y administra las de SUS áreas (puede tener varias).
+ *  - El coordinador sube y administra las de SUS áreas (puede tener varias).
  *  - El administrador controla las de todas las áreas (y las generales, sin área).
  */
 class TemplatePolicy

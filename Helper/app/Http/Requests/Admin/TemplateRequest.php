@@ -8,10 +8,10 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 
 /**
- * Crear y editar plantillas (admin y moderador).
+ * Crear y editar plantillas (admin y coordinador).
  *  - Admin: elige el área.
- *  - Moderador con una sola área: siempre se usa esa.
- *  - Moderador con varias áreas: elige una de las suyas al subir (al editar no se puede mover de área).
+ *  - Coordinador con una sola área: siempre se usa esa.
+ *  - Coordinador con varias áreas: elige una de las suyas al subir (al editar no se puede mover de área).
  */
 class TemplateRequest extends FormRequest
 {

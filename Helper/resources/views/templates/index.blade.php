@@ -1,7 +1,7 @@
 @php
   $me = auth()->user();
   $isAdmin = $me->isAdmin();
-  $pickArea = $isAdmin || $formAreas->count() > 1; // el admin y el moderador con varias áreas eligen el área
+  $pickArea = $isAdmin || $formAreas->count() > 1; // el admin y el coordinador con varias áreas eligen el área
   $canUpload = $me->can('create', \App\Models\Template::class);
   $reopenName = $templates->getCollection()->firstWhere('id', (int) old('template_id'))?->name;
 @endphp
@@ -95,7 +95,7 @@
                     data-confirm="{{ $t->isActive() ? 'Los usuarios dejarán de ver «'.$t->name.'» al crear documentos. Los documentos ya creados no se afectan.' : 'Los usuarios podrán volver a elegir «'.$t->name.'».' }}"
                     data-confirm-title="{{ $t->isActive() ? 'Desactivar plantilla' : 'Activar plantilla' }}"
                     data-confirm-text="{{ $t->isActive() ? 'Desactivar' : 'Activar' }}"
-                    data-confirm-variant="{{ $t->isActive() ? 'warning' : 'primary' }}">
+                    data-confirm-variant="{{ $t->isActive() ? 'warning' : 'primary-outline' }}">
                 @csrf @method('PATCH')
                 <button type="submit" class="hp-btn-sm {{ $t->isActive() ? 'hp-btn-sm--warn' : 'hp-btn-sm--ok' }}">
                   <i class="bi {{ $t->isActive() ? 'bi-pause-circle' : 'bi-play-circle' }}" aria-hidden="true"></i> {{ $t->isActive() ? 'Desactivar' : 'Activar' }}
@@ -121,7 +121,7 @@
         @elseif ($canUpload)
           Aún no hay plantillas. Sube la primera con “Subir plantilla”.
         @else
-          Todavía no hay plantillas para tu área. Pídele al moderador de tu área que suba una.
+          Todavía no hay plantillas para tu área. Pídele al coordinador de tu área que suba una.
         @endif
       </div>
     @endforelse

@@ -1,6 +1,6 @@
 {{--
   Tarjeta de plantilla: mismo diseño que la de documentos.
-  Variables: $t (plantilla) · $canManage (moderador/admin: muestra estado y acciones de administración)
+  Variables: $t (plantilla) · $canManage (coordinador/admin: muestra estado y acciones de administración)
 --}}
 @php
   $canUse = auth()->user()->can('useTemplate', $t);
@@ -68,7 +68,7 @@
               data-confirm="{{ $t->isActive() ? 'Los usuarios dejarán de ver «'.$t->name.'» al crear documentos. Los documentos ya creados no se afectan.' : 'Los usuarios del área podrán volver a elegir «'.$t->name.'».' }}"
               data-confirm-title="{{ $t->isActive() ? 'Desactivar plantilla' : 'Activar plantilla' }}"
               data-confirm-text="{{ $t->isActive() ? 'Desactivar' : 'Activar' }}"
-              data-confirm-variant="{{ $t->isActive() ? 'warning' : 'primary' }}">
+              data-confirm-variant="{{ $t->isActive() ? 'warning' : 'primary-outline' }}">
           @csrf
           @method('PATCH')
           <button type="submit" class="hp-btn-sm {{ $t->isActive() ? 'hp-btn-sm--warn' : 'hp-btn-sm--ok' }}">

@@ -1,4 +1,4 @@
-{{-- Menú lateral según el rol: Administrador, Moderador o Usuario. --}}
+{{-- Menú lateral según el rol: Administrador, Coordinador o Usuario. --}}
 @php
   $me = auth()->user();
   $link = fn (string $name, array $params = []) => Route::has($name) ? route($name, $params) : '#';

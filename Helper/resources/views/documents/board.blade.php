@@ -1,4 +1,4 @@
-{{-- «Mis documentos»: únicamente los documentos creados por quien consulta (usuario, moderador o administrador). --}}
+{{-- «Mis documentos»: únicamente los documentos creados por quien consulta (usuario, coordinador o administrador). --}}
 @php
   $total = $documents->count();
   $drafts = $documents->where('status', 'draft')->count();

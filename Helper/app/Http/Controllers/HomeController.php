@@ -18,7 +18,7 @@ class HomeController extends Controller
             : redirect()->route('login');
     }
 
-    /** Punto de entrada único: el admin va a su dashboard; moderador y usuario, a "Mis documentos". */
+    /** Punto de entrada único: el admin va a su dashboard; coordinador y usuario, a "Mis documentos". */
     public function dashboard(): RedirectResponse
     {
         return redirect()->route(auth()->user()->role->dashboardRoute());

@@ -52,7 +52,7 @@ class AuditLog extends Model
         'area.status.active' => 'Activa', 'area.status.suspended' => 'Suspendida',
         'template.status.active' => 'Activa', 'template.status.inactive' => 'Inactiva',
         'document.status.draft' => 'Borrador', 'document.status.completed' => 'Completado',
-        'user.role.admin' => 'Administrador', 'user.role.mod' => 'Moderador', 'user.role.user' => 'Usuario',
+        'user.role.admin' => 'Administrador', 'user.role.mod' => 'Coordinador', 'user.role.user' => 'Usuario',
     ];
 
     protected $fillable = [
