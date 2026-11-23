@@ -117,7 +117,7 @@ class OnlyOfficeService
                     'download' => true,
                     'print'    => true,
                     'comment'  => $canEdit,
-                    'review'   => $canEdit,
+                    'review'   => false,
                 ],
             ],
             'editorConfig' => [

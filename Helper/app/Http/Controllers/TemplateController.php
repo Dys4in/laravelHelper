@@ -27,7 +27,7 @@ class TemplateController extends Controller
         Gate::authorize('viewAny', Template::class);
 
         $user = $request->user();
-        $canManage = $user->hasRole('admin', 'mod');
+        $canManage = $user->isAdmin() || $user->areaIds() !== [];
         $search = trim((string) $request->input('q'));
 
         $base = Template::query()
@@ -83,7 +83,7 @@ class TemplateController extends Controller
         Template::create([
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
-            // El coordinador solo sube a sus áreas (TemplateRequest lo valida); con una sola, no hace falta elegir.
+            // Cada usuario solo sube a sus áreas (TemplateRequest lo valida); con una sola, no hace falta elegir.
             'area_id' => $user->isAdmin() ? ($data['area_id'] ?? null) : (($data['area_id'] ?? null) ?: ($user->areaIds()[0] ?? null)),
             'status' => $data['status'] ?? Template::ACTIVE,
             'file_path' => $path,

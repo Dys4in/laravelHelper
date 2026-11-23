@@ -1,7 +1,7 @@
 <x-admin-layout title="Usuarios">
   <section class="flex flex-wrap items-center justify-between gap-4">
     <div>
-      <p class="text-sm text-gray-600">Solo el administrador puede crear cuentas y asignar su rol y área.</p>
+      <p class="text-sm text-gray-600">Los coordinadores ven, crean, editan y desactivan usuarios de sus áreas; los administradores y jefes de área gestionan todas las cuentas.</p>
     </div>
       <button type="button" data-modal-open="create-user" class="hp-btn-outline">
           <i class="bi bi-file-earmark-plus mr-2" aria-hidden="true"></i>
@@ -81,21 +81,26 @@
             </td>
             <td class="px-4 py-3">
               <div class="flex items-center justify-end gap-2">
-                <button type="button" class="hp-btn-outline px-3 py-1.5 text-xs font-medium" data-modal-open="edit-user-{{ $u->id }}">Editar</button>
+                @php $editable = $canEditUser($u); @endphp
+                @if (! $editable)
+                  <span class="text-xs text-gray-400">{{ $u->hasRole(\App\Enums\UserRole::Admin) || $canToggleStatus ? 'Cuenta protegida' : 'Solo lectura' }}</span>
+                @else
+                  <button type="button" class="hp-btn-outline px-3 py-1.5 text-xs font-medium" data-modal-open="edit-user-{{ $u->id }}">Editar</button>
 
-                @unless ($u->is(auth()->user()))
-                  <form method="POST" action="{{ route('admin.users.status', $u) }}"
-                        data-confirm="{{ $u->isActive() ? $u->name.' no podrá iniciar sesión hasta que lo reactives.' : $u->name.' volverá a poder iniciar sesión.' }}"
-                        data-confirm-title="{{ $u->isActive() ? 'Desactivar usuario' : 'Reactivar usuario' }}"
-                        data-confirm-text="{{ $u->isActive() ? 'Desactivar' : 'Reactivar' }}"
-                        data-confirm-variant="{{ $u->isActive() ? 'warning' : 'primary' }}">
-                    @csrf
-                    @method('PATCH')
-                    <button type="submit" class="rounded-lg border px-3 py-1.5 text-xs font-medium {{ $u->isActive() ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50' }}">
-                      {{ $u->isActive() ? 'Desactivar' : 'Activar' }}
-                    </button>
-                  </form>
-                @endunless
+                  @if ($canToggleStatus && ! $u->is(auth()->user()))
+                    <form method="POST" action="{{ route('admin.users.status', $u) }}"
+                          data-confirm="{{ $u->isActive() ? $u->name.' no podrá iniciar sesión hasta que lo reactives.' : $u->name.' volverá a poder iniciar sesión.' }}"
+                          data-confirm-title="{{ $u->isActive() ? 'Desactivar usuario' : 'Reactivar usuario' }}"
+                          data-confirm-text="{{ $u->isActive() ? 'Desactivar' : 'Reactivar' }}"
+                          data-confirm-variant="{{ $u->isActive() ? 'warning' : 'primary' }}">
+                      @csrf
+                      @method('PATCH')
+                      <button type="submit" class="rounded-lg border px-3 py-1.5 text-xs font-medium {{ $u->isActive() ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50' }}">
+                        {{ $u->isActive() ? 'Desactivar' : 'Activar' }}
+                      </button>
+                    </form>
+                  @endif
+                @endif
               </div>
             </td>
           </tr>
@@ -109,11 +114,11 @@
   {{ $users->links() }}
 
   {{-- Ventana: Nuevo usuario --}}
-  <x-app-modal id="create-user" title="Nuevo usuario" description="Solo el administrador crea cuentas. Elige su rol y su área." size="xl">
+  <x-app-modal id="create-user" title="Nuevo usuario" description="Elige los datos del usuario y el área a la que pertenecerá." size="xl">
     <form id="create-user-form" method="POST" action="{{ route('admin.users.store') }}" class="space-y-6" autocomplete="off">
       @csrf
       <input type="hidden" name="_modal" value="create-user">
-      @include('admin.users._form', ['user' => $newUser, 'areas' => $formAreas, 'roles' => $roles, 'modalId' => 'create-user'])
+      @include('admin.users._form', ['user' => $newUser, 'areas' => $formAreas, 'roles' => $formRoles, 'modalId' => 'create-user'])
 
       <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
         <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>
@@ -130,10 +135,11 @@
       if (!role) return;
 
       function syncAdminConfirm() {
-        if (role.value === 'admin') {
+        if (role.value === 'admin' || role.value === 'jefe_de_area') {
+          var roleLabel = role.options[role.selectedIndex].text;
           form.setAttribute('data-confirm', 'Este usuario tendrá acceso total al sistema, incluida la creación de otros administradores.');
-          form.setAttribute('data-confirm-title', 'Crear administrador');
-          form.setAttribute('data-confirm-text', 'Crear administrador');
+          form.setAttribute('data-confirm-title', 'Crear ' + roleLabel);
+          form.setAttribute('data-confirm-text', 'Crear ' + roleLabel);
           form.setAttribute('data-confirm-variant', 'warning');
         } else {
           ['data-confirm', 'data-confirm-title', 'data-confirm-text', 'data-confirm-variant'].forEach(function (attr) {
@@ -149,6 +155,7 @@
 
   {{-- Ventanas: Editar usuario --}}
   @foreach ($users as $u)
+    @continue(! $canEditUser($u))
     @php
       $editModal = 'edit-user-'.$u->id;
       $userAreas = $formAreas->concat($u->areas)->concat($u->area ? [$u->area] : [])->unique('id')->sortBy('name')->values();
@@ -158,7 +165,7 @@
         @csrf
         @method('PUT')
         <input type="hidden" name="_modal" value="{{ $editModal }}">
-        @include('admin.users._form', ['user' => $u, 'areas' => $userAreas, 'roles' => $roles, 'modalId' => $editModal])
+        @include('admin.users._form', ['user' => $u, 'areas' => $userAreas, 'roles' => $formRoles, 'modalId' => $editModal])
 
         <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
           <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>

@@ -1,7 +1,7 @@
 @php
   $me = auth()->user();
   $isAdmin = $me->isAdmin();
-  $pickArea = $isAdmin || $formAreas->count() > 1; // el admin y el coordinador con varias áreas eligen el área
+  $pickArea = $isAdmin || $formAreas->count() > 1; // el admin y quien tiene varias áreas eligen el área
   $canUpload = $me->can('create', \App\Models\Template::class);
   $reopenName = $templates->getCollection()->firstWhere('id', (int) old('template_id'))?->name;
 @endphp
@@ -15,7 +15,7 @@
         @elseif ($canManage)
           {{ $formAreas->count() > 1 ? 'Plantillas de tus áreas ('.$formAreas->pluck('name')->join(', ').')' : 'Plantillas del área '.$formAreas->first()?->name }}. Sube las que tu equipo necesita y actívalas o desactívalas cuando quieras.
         @else
-          Elige una plantilla de tu área para crear un documento. Se crea una copia: la plantilla original no cambia.
+          Elige una plantilla de tu área para crear un documento o sube la tuya. Se crea una copia: la plantilla original no cambia.
         @endif
       </p>
     </div>
@@ -121,7 +121,7 @@
         @elseif ($canUpload)
           Aún no hay plantillas. Sube la primera con “Subir plantilla”.
         @else
-          Todavía no hay plantillas para tu área. Pídele al coordinador de tu área que suba una.
+          Todavía no hay plantillas para tu área. Sube la primera con “Subir plantilla”.
         @endif
       </div>
     @endforelse

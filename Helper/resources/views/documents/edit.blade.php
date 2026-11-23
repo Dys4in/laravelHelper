@@ -120,8 +120,6 @@
       <div class="flex items-center gap-3">
       @if ($mode === 'edit')
         <p class="hidden text-xs text-gray-500 md:block">Ctrl+S guarda al instante. Al cerrar el editor, los cambios se guardan solos en unos segundos.</p>
-      @elseif ($mode === 'review')
-        <p class="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-800">Modo revisión · tus cambios quedan como sugerencias para {{ $document->user?->name ?? 'su creador' }}</p>
       @else
         <p class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">Solo lectura · documento completado</p>
       @endif

@@ -78,12 +78,12 @@ class OnlyOfficeService
     /**
      * Configuración que recibe DocsAPI.DocEditor en el navegador (ya firmada con JWT).
      *
-     * @param  string  $mode  'edit' = el creador edita · 'review' = control de cambios (coordinador/admin) · 'view' = solo lectura
+     * @param  string  $mode  'edit' = edición · 'view' = solo lectura
      * @return array<string, mixed>
      */
     public function editorConfig(Document $document, User $user, string $mode = 'edit'): array
     {
-        $mode = in_array($mode, ['edit', 'review', 'view'], true) ? $mode : 'view';
+        $mode = in_array($mode, ['edit', 'view'], true) ? $mode : 'view';
 
         $config = [
             'documentType' => 'word',
@@ -103,16 +103,14 @@ class OnlyOfficeService
                     'print' => false,
                     // Sin la pestaña "Protección" (cifrar con contraseña, firma) ni el botón de proteger.
                     'protect' => false,
-                    // edit  = el creador, que además puede aceptar / rechazar los cambios de quien revisa.
-                    // review = solo control de cambios: edit=false + review=true (modo revisión forzado).
-                    // view   = solo lectura.
+                    // edit = edición directa (sin control de cambios); view = solo lectura.
                     'edit' => $mode === 'edit',
-                    'review' => $mode !== 'view',
+                    'review' => false,
                     'comment' => $mode !== 'view',
                 ],
             ],
             'editorConfig' => [
-                // Un documento completado se abre como visor; el modo revisión necesita mode=edit.
+                // Un documento completado se abre como visor.
                 'mode' => $mode === 'view' ? 'view' : 'edit',
                 'lang' => config('onlyoffice.lang'),
                 'callbackUrl' => $this->callbackUrl($document),

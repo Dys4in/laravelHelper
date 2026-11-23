@@ -9,7 +9,7 @@ use Illuminate\Validation\Rules\Password;
 
 /**
  * Sirve para crear y editar. Si la ruta trae {user}, es edición.
- * El acceso ya está restringido por el middleware role:admin.
+ * El acceso ya está restringido por las rutas: admin/jefe gestionan todo; el coordinador solo crea usuarios de sus áreas.
  */
 class UserRequest extends FormRequest
 {
@@ -20,8 +20,11 @@ class UserRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $signature = trim((string) $this->input('signature'));
+
         $this->merge([
             'name' => trim((string) $this->input('name')),
+            'signature' => $signature !== '' ? $signature : null,
             'email' => strtolower(trim((string) $this->input('email'))),
         ]);
     }
@@ -33,6 +36,7 @@ class UserRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255', Rule::unique('users', 'name')->ignore($user?->id)],
+            'signature' => ['nullable', 'string', 'max:50'],
             'username' => ['nullable', 'string', 'max:50', Rule::unique('users', 'username')->ignore($user?->id)],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user?->id)],
             'role' => ['required', Rule::enum(UserRole::class)],

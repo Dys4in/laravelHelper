@@ -85,7 +85,7 @@ Route::middleware(['auth', 'active'])->group(function () {
 |--------------------------------------------------------------------------
 | Coordinador = documentos de su área · Administrador = todos.
 */
-Route::middleware(['auth', 'active', 'role:admin,mod'])->group(function () {
+Route::middleware(['auth', 'active', 'role:admin,jefe_de_area,mod'])->group(function () {
     Route::get('/supervision', [DocumentController::class, 'supervision'])->name('supervision.index');
 });
 
@@ -94,14 +94,19 @@ Route::middleware(['auth', 'active', 'role:admin,mod'])->group(function () {
 | Administrador
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'active', 'role:admin'])
+Route::middleware(['auth', 'active', 'role:admin,jefe_de_area,mod'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::resource('users', AdminUserController::class)->only(['index', 'store', 'edit', 'update']);
+        Route::patch('users/{user}/status', [AdminUserController::class, 'toggleStatus'])->name('users.status');
+    });
+
+Route::middleware(['auth', 'active', 'role:admin,jefe_de_area'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
-
-        Route::resource('users', AdminUserController::class)->except(['show', 'destroy', 'create']);
-        Route::patch('users/{user}/status', [AdminUserController::class, 'toggleStatus'])->name('users.status');
 
         Route::resource('areas', AdminAreaController::class)->except(['show', 'create']);
         Route::patch('areas/{area}/status', [AdminAreaController::class, 'toggleStatus'])->name('areas.status');

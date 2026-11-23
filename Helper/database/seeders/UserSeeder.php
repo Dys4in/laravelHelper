@@ -19,7 +19,7 @@ class UserSeeder extends Seeder
 
 
         $users = [
-            ['Admin User', 'admin@gmail.com', UserRole::Admin, null],
+            ['Admin User', 'admin.villarica@fareva.com', UserRole::Admin, null],
             
         ];
 

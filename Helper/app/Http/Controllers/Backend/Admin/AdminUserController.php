@@ -19,24 +19,41 @@ class AdminUserController extends Controller
 {
     public function index(Request $request): View
     {
+        $actor = $request->user();
+        $isAdmin = $actor->isAdmin();
+        $areaIds = $isAdmin ? [] : ($actor->areaIds() ?: [0]);
         $search = trim((string) $request->input('q'));
 
-        $users = User::query()
-            ->with(['area', 'areas'])
-            ->when($search !== '', function ($query) use ($search) {
-                // La abreviatura se calcula en PHP, así que resolvemos los IDs que coinciden.
-                $abbreviationIds = User::query()
-                    ->get(['id', 'name'])
-                    ->filter(fn (User $user) => Str::contains(Str::lower($user->short_name), Str::lower($search)))
-                    ->pluck('id');
+        $scope = function ($query) use ($isAdmin, $areaIds) {
+            if ($isAdmin) {
+                return;
+            }
 
-                $query->where(function ($w) use ($search, $abbreviationIds) {
-                    $w->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('username', 'like', "%{$search}%")
-                        ->when($abbreviationIds->isNotEmpty(), fn ($q) => $q->orWhereIn('id', $abbreviationIds));
-                });
-            })
+            $query->where(function ($w) use ($areaIds) {
+                $w->whereIn('area_id', $areaIds)
+                    ->orWhereIn('id', fn ($sub) => $sub->from('area_user')->select('user_id')->whereIn('area_id', $areaIds));
+            })->whereNotIn('role', [UserRole::Admin->value, UserRole::JefeArea->value]);
+        };
+
+        $users = User::query()->with(['area', 'areas']);
+        $scope($users);
+
+        $users = $users->when($search !== '', function ($query) use ($search, $scope) {
+            // La abreviatura se calcula en PHP, así que resolvemos los IDs que coinciden.
+            $abbreviationQuery = User::query();
+            $scope($abbreviationQuery);
+            $abbreviationIds = $abbreviationQuery
+                ->get(['id', 'name'])
+                ->filter(fn (User $user) => Str::contains(Str::lower($user->short_name), Str::lower($search)))
+                ->pluck('id');
+
+            $query->where(function ($w) use ($search, $abbreviationIds) {
+                $w->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%")
+                    ->when($abbreviationIds->isNotEmpty(), fn ($q) => $q->orWhereIn('id', $abbreviationIds));
+            });
+        })
             ->when($request->filled('area'), fn ($q) => $q->where(function ($w) use ($request) {
                 // Incluye a los coordinadores que tienen esa área entre las suyas.
                 $w->where('area_id', $request->integer('area'))
@@ -47,12 +64,22 @@ class AdminUserController extends Controller
             ->paginate(15)
             ->withQueryString();
 
+        $visibleAreas = $isAdmin
+            ? Area::orderBy('name')->get()
+            : Area::whereIn('id', $areaIds)->orderBy('name')->get();
+        $formAreas = $isAdmin
+            ? Area::active()->orderBy('name')->get()
+            : $visibleAreas;
+
         return view('admin.users.index', [
             'users' => $users,
-            'areas' => Area::orderBy('name')->get(),
+            'areas' => $visibleAreas,
             'roles' => UserRole::cases(),
+            'formRoles' => $isAdmin ? UserRole::cases() : [UserRole::User],
+            'canEditUser' => fn (User $target) => $this->canEdit($actor, $target),
+            'canToggleStatus' => true,
             // Formulario de "Nuevo usuario" (ventana)
-            'formAreas' => Area::active()->orderBy('name')->get(),
+            'formAreas' => $formAreas,
             'newUser' => new User(['role' => UserRole::User, 'status' => 'active']),
         ]);
     }
@@ -60,6 +87,12 @@ class AdminUserController extends Controller
     public function store(UserRequest $request): RedirectResponse
     {
         $data = $request->validated();
+
+        if (! $request->user()->isAdmin()) {
+            abort_unless(($data['role'] ?? null) === UserRole::User->value, 403);
+            abort_unless(in_array($data['area_id'] ?? null, $request->user()->areaIds(), true), 403);
+        }
+
         [$primaryId, $areaIds] = $this->resolveAreas($data, null);
 
         DB::transaction(function () use ($data, $primaryId, $areaIds) {
@@ -70,17 +103,28 @@ class AdminUserController extends Controller
         return redirect()->route('admin.users.index')->with('status', 'Usuario creado correctamente.');
     }
 
-    public function edit(User $user): View
+    public function edit(Request $request, User $user): View|RedirectResponse
     {
-        return view('admin.users.edit', [
-            'user' => $user,
-            // Áreas activas + las actuales del usuario (aunque estén suspendidas) para no perderlas al guardar.
-            'areas' => Area::query()
+        $actor = $request->user();
+
+        if ($user->hasRole(UserRole::Admin)) {
+            return redirect()->route('admin.users.index')->with('error', 'La cuenta de administrador no se puede editar.');
+        }
+
+        abort_unless($this->canEdit($actor, $user), 403);
+
+        $areas = $actor->isAdmin()
+            ? Area::query()
                 ->where(fn ($q) => $q->where('status', Area::ACTIVE)
                     ->orWhereIn('id', $user->assignedAreas()->pluck('id')))
                 ->orderBy('name')
-                ->get(),
-            'roles' => UserRole::cases(),
+                ->get()
+            : Area::whereIn('id', $actor->areaIds())->orderBy('name')->get();
+
+        return view('admin.users.edit', [
+            'user' => $user,
+            'areas' => $areas,
+            'roles' => $actor->isAdmin() ? UserRole::cases() : [UserRole::User],
         ]);
     }
 
@@ -88,8 +132,18 @@ class AdminUserController extends Controller
     {
         $data = $request->validated();
 
-        // Un admin no puede quitarse su propio rol ni desactivarse (evita quedarse sin acceso).
-        if ($user->is($request->user()) && ($data['role'] !== UserRole::Admin->value || $data['status'] !== 'active')) {
+        if ($user->hasRole(UserRole::Admin)) {
+            return back()->with('error', 'La cuenta de administrador no se puede editar.');
+        }
+
+        if (! $request->user()->isAdmin()) {
+            abort_unless($this->canEdit($request->user(), $user), 403);
+            abort_unless(($data['role'] ?? null) === UserRole::User->value, 403);
+            abort_unless(in_array($data['area_id'] ?? null, $request->user()->areaIds(), true), 403);
+        }
+
+        // Un jefe de área no puede quitarse su propio rol ni desactivarse (evita quedarse sin acceso).
+        if ($user->is($request->user()) && ($data['role'] !== $user->role?->value || $data['status'] !== 'active')) {
             return back()->withInput()->with('error', 'No puedes cambiar tu propio rol ni desactivar tu propia cuenta.');
         }
 
@@ -105,6 +159,7 @@ class AdminUserController extends Controller
         sort($areaIds);
 
         $unchanged = (string) $data['name'] === (string) $user->name
+            && (string) ($data['signature'] ?? '') === (string) ($user->signature ?? '')
             && strtolower((string) $data['email']) === strtolower((string) $user->email)
             && (! array_key_exists('username', $data) || (string) $data['username'] === (string) $user->username)
             && (string) $data['role'] === (string) $user->role?->value
@@ -135,8 +190,16 @@ class AdminUserController extends Controller
 
     public function toggleStatus(Request $request, User $user): RedirectResponse
     {
+        if ($user->hasRole(UserRole::Admin)) {
+            return back()->with('error', 'La cuenta de administrador no se puede desactivar.');
+        }
+
         if ($user->is($request->user())) {
             return back()->with('error', 'No puedes desactivar tu propia cuenta.');
+        }
+
+        if (! $request->user()->isAdmin()) {
+            abort_unless($this->canEdit($request->user(), $user), 403);
         }
 
         $user->update(['status' => $user->isActive() ? 'inactive' : 'active']);
@@ -146,16 +209,37 @@ class AdminUserController extends Controller
             : "{$user->name} fue desactivado y ya no podrá iniciar sesión.");
     }
 
+    /** Admin/jefe editan cualquier cuenta excepto admin; el coordinador solo usuarios de sus áreas. */
+    private function canEdit(User $actor, User $target): bool
+    {
+        if ($actor->isAdmin()) {
+            return ! $target->hasRole(UserRole::Admin);
+        }
+
+        if (! $target->hasRole(UserRole::User)) {
+            return false;
+        }
+
+        $targetAreas = $target->assignedAreas()->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        return array_intersect($actor->areaIds(), $targetAreas) !== [];
+    }
+
     /**
      * Área principal (users.area_id) y lista completa de áreas (tabla area_user) según el rol:
      *  - Coordinador: todas las marcadas; la principal es la que ya tenía (si sigue marcada) o la primera.
      *  - Usuario / administrador: solo area_id y sin áreas extra.
+     *  - Jefe de área: sin ninguna área asignada.
      *
      * @param  array<string, mixed>  $data  Datos validados del formulario.
      * @return array{0: ?int, 1: list<int>}
      */
     private function resolveAreas(array $data, ?User $current): array
     {
+        if (($data['role'] ?? null) === UserRole::JefeArea->value) {
+            return [null, []];
+        }
+
         if (($data['role'] ?? null) === UserRole::Mod->value) {
             $ids = array_values(array_unique(array_map('intval', $data['areas'] ?? [])));
             $kept = $current && in_array((int) $current->area_id, $ids, true) ? (int) $current->area_id : null;

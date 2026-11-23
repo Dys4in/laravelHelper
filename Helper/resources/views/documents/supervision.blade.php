@@ -34,7 +34,7 @@
 
     <select name="status" class="hp-select">
       <option value="">Todos los estados</option>
-      <option value="draft" @selected(request('status') === 'draft')>Borrador</option>
+      <option value="draft" @selected(request('status') === 'draft')>En proceso</option>
       <option value="completed" @selected(request('status') === 'completed')>Completado</option>
     </select>
 

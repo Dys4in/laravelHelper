@@ -10,7 +10,7 @@
           {{ $doc->code }} · Creado {{ $doc->created_at->format('d/m/Y') }}@if ($showOwner) · {{ $doc->user?->name ?? 'Usuario eliminado' }}@if ($doc->area) · {{ $doc->area->name }}@endif @endif
         </p>
       </div>
-      <span class="hp-badge hp-badge--{{ $doc->status }}">{{ $doc->status }}</span>
+      <span class="hp-badge hp-badge--{{ $doc->status }}">{{ $doc->statusLabel() }}</span>
     </a>
   @empty
     <p class="py-6 text-center text-sm text-gray-500">Aún no hay documentos.</p>

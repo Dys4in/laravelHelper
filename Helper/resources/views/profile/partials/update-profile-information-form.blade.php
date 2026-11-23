@@ -5,7 +5,7 @@
         </h2>
 
         <p class="mt-1 text-sm text-gray-600">
-            Edita tu nombre correspondiente a tu firma
+            Edita tu nombre y la firma que aparece en los documentos
         </p>
     </header>
 
@@ -27,15 +27,13 @@
 
         <div class="grid gap-5 sm:grid-cols-2">
             <div>
-                <div class="flex items-center justify-between gap-2">
-                    <label for="short_name" class="block text-sm font-medium text-gray-700">Firma</label>
-                    <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
-                        <i class="bi bi-lock" aria-hidden="true"></i>
-                        Solo lectura
-                    </span>
-                </div>
-                <input id="short_name" type="text" value="{{ $user->short_name }}" readonly
-                       class="mt-1.5 block w-full cursor-not-allowed rounded-lg border-gray-200 bg-gray-50 text-sm text-gray-500 focus:border-gray-200 focus:ring-0">
+                <label for="signature" class="block text-sm font-medium text-gray-700">Firma</label>
+                <input id="signature" name="signature" type="text" value="{{ old('signature', $user->signature) }}" maxlength="50" autocomplete="off"
+                       class="mt-1.5 block w-full rounded-lg border-gray-300 bg-white text-sm text-gray-900 shadow-sm transition focus:border-brand focus:ring-brand @error('signature') !border-red-400 @enderror">
+                <p class="mt-1.5 text-xs text-gray-500">Si la dejas vacía, se genera a partir de tu nombre.</p>
+                @error('signature')
+                    <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <div>

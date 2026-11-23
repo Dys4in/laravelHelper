@@ -13,6 +13,8 @@
   $areaNames = $areas->pluck('name', 'id');
   $areaSummary = collect($selectedAreas)->map(fn ($id) => $areaNames->get($id))->filter()->implode(', ');
   $isMod = $currentRole === 'mod';
+  $noAreas = $currentRole === 'jefe_de_area';
+  $formRoles = array_values(array_filter($roles, fn ($role) => $role->value !== 'admin' || $role->value === $currentRole));
 @endphp
 
 <div class="hp-modal-grid" data-user-form="{{ $p }}form">
@@ -20,6 +22,13 @@
     <label for="{{ $p }}name" class="hp-label">Nombre completo *</label>
     <input id="{{ $p }}name" name="name" type="text" value="{{ $val('name', $user->name) }}" required class="hp-input" {{ $invalid('name') }}>
     @if ($e = $err('name'))<p class="hp-error">{{ $e }}</p>@endif
+  </div>
+
+  <div>
+    <label for="{{ $p }}signature" class="hp-label">Firma (opcional)</label>
+    <input id="{{ $p }}signature" name="signature" type="text" value="{{ $val('signature', $user->signature) }}" maxlength="50" class="hp-input" {{ $invalid('signature') }}>
+    @if ($e = $err('signature'))<p class="hp-error">{{ $e }}</p>@endif
+    <p class="hp-help">Si se deja vacía, se genera a partir del nombre.</p>
   </div>
 
   <div>
@@ -31,7 +40,7 @@
   <div>
     <label for="{{ $p }}role" class="hp-label">Rol *</label>
     <select id="{{ $p }}role" name="role" required class="hp-select" data-role-select {{ $invalid('role') }}>
-      @foreach ($roles as $role)
+      @foreach ($formRoles as $role)
         <option value="{{ $role->value }}" @selected($currentRole === $role->value)>{{ $role->label() }}</option>
       @endforeach
     </select>
@@ -46,9 +55,9 @@
     </select>
   </div>
 
-  <div class="sm:col-span-2" data-area-single @if ($isMod) hidden @endif>
+  <div class="sm:col-span-2" data-area-single @if ($isMod || $noAreas) hidden @endif>
     <label for="{{ $p }}area_id" class="hp-label">Área *</label>
-    <select id="{{ $p }}area_id" name="area_id" class="hp-select" data-area-single-input @if ($isMod) disabled @endif {{ $invalid('area_id') }}>
+    <select id="{{ $p }}area_id" name="area_id" class="hp-select" data-area-single-input @if ($isMod || $noAreas) disabled @endif {{ $invalid('area_id') }}>
       <option value="">— Selecciona un área —</option>
       @foreach ($areas as $area)
         <option value="{{ $area->id }}" @selected((string) $primaryArea === (string) $area->id)>
@@ -202,9 +211,10 @@
 
   function sync() {
     var isMod = role && role.value === 'mod';
-    if (singleWrap) singleWrap.hidden = isMod;
+    var noAreas = role && role.value === 'jefe_de_area';
+    if (singleWrap) singleWrap.hidden = isMod || noAreas;
     if (multiWrap) multiWrap.hidden = !isMod;
-    if (single) single.disabled = isMod;
+    if (single) single.disabled = isMod || noAreas;
     checks.forEach(function (c) { c.disabled = !isMod; });
     toggle.disabled = !isMod;
     if (! isMod) close();

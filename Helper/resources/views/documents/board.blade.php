@@ -17,7 +17,7 @@
         <span class="hp-stat-label">Todos:</span><span class="hp-stat-value" data-count="all">{{ $total }}</span>
       </button>
       <button type="button" class="hp-stat" data-filter="draft" aria-pressed="false">
-        <span class="hp-stat-label">Borradores:</span><span class="hp-stat-value" data-count="draft">{{ $drafts }}</span>
+        <span class="hp-stat-label">En proceso:</span><span class="hp-stat-value" data-count="draft">{{ $drafts }}</span>
       </button>
       <button type="button" class="hp-stat" data-filter="completed" aria-pressed="false">
         <span class="hp-stat-label">Completados:</span><span class="hp-stat-value" data-count="completed">{{ $completed }}</span>

@@ -27,6 +27,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'signature',
         'username',
         'email',
         'password',
@@ -131,7 +132,7 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->role === UserRole::Admin;
+        return in_array($this->role, [UserRole::Admin, UserRole::JefeArea], true);
     }
 
     public function isActive(): bool
@@ -140,7 +141,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Abreviatura del nombre:
+     * Firma del usuario: la personalizada si la hay; si no, se calcula del nombre:
      * - Dos palabras: inicial del primero + segundo completo ("Juan Carlos" => "J.Carlos").
      * - Tres o más: iniciales de todas menos la última + apellido completo
      *   ("Juan Carlos Pérez" => "J.C.Pérez").
@@ -148,6 +149,10 @@ class User extends Authenticatable
     protected function shortName(): Attribute
     {
         return Attribute::get(function () {
+            if (($signature = trim((string) $this->signature)) !== '') {
+                return $signature;
+            }
+
             $parts = preg_split('/\s+/', trim((string) $this->name), -1, PREG_SPLIT_NO_EMPTY);
 
             if (count($parts) <= 1) {

@@ -8,8 +8,8 @@ use App\Models\User;
 /**
  * Reglas de documentos:
  *  - Usuario:       ve y edita solo SUS documentos.
- *  - Coordinador:   ve los de sus áreas (puede tener varias); los de otros los REVISA (control de cambios); puede completarlos / reabrirlos.
- *  - Administrador: ve todos; los de otros los REVISA; puede completarlos / reabrirlos.
+ *  - Coordinador:   ve y edita los de sus áreas (puede tener varias); puede completarlos / reabrirlos.
+ *  - Administrador: ve todos; puede completarlos / reabrirlos.
  *  - Completado:    se abre solo en modo lectura, sin importar el usuario.
  *  - Descargar:     solo documentos COMPLETADOS, sin excepciones.
  *  - Renombrar:     el dueño, el coordinador de su área o el admin, en cualquier estado.
@@ -33,29 +33,23 @@ class DocumentPolicy
     }
 
     /**
-     * Editar: solo el CREADOR del documento y mientras no esté completado.
-     * Coordinador y administrador que no son el creador no editan: revisan (ver review()).
+     * Editar: el CREADOR o el coordinador de su área, mientras no esté completado.
      */
     public function edit(User $user, Document $document): bool
     {
         return $this->view($user, $document)
             && ! $document->isCompleted()
-            && $document->user_id === $user->id;
+            && ($document->user_id === $user->id
+                || ($user->hasRole('mod') && $user->hasArea($document->area_id)));
     }
 
-    /**
-     * Revisar (control de cambios): coordinador o administrador que NO son el creador, mientras no esté completado.
-     * Sus cambios quedan como sugerencias que el creador acepta o rechaza.
-     */
+    /** El modo revisión está desactivado: cualquier documento accesible se abre para editar o solo leer. */
     public function review(User $user, Document $document): bool
     {
-        return $this->view($user, $document)
-            && ! $document->isCompleted()
-            && $document->user_id !== $user->id
-            && $user->hasRole('admin', 'mod');
+        return false;
     }
 
-    /** Marcar como completado / volver a borrador. */
+    /** Marcar como completado / volver a En proceso. */
     public function changeStatus(User $user, Document $document): bool
     {
         return $user->isAdmin()

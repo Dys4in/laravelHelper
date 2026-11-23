@@ -64,7 +64,7 @@
       </div>
 
       <p class="mt-auto pt-4 text-xs leading-relaxed text-gray-400">
-        La abreviatura y el correo electrónico se gestionan desde la administración del sistema.
+        La firma se edita en Información personal. El correo electrónico se gestiona desde la administración del sistema.
       </p>
     </section>
 

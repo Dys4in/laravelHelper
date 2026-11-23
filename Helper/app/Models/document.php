@@ -55,6 +55,15 @@ class Document extends Model
         return $this->status === self::COMPLETED;
     }
 
+    public function statusLabel(): string
+    {
+        return match ($this->status) {
+            self::DRAFT => 'En proceso',
+            self::COMPLETED => 'Completado',
+            default => $this->status,
+        };
+    }
+
     /** Documentos creados por el usuario ("Mis documentos"). */
     public function scopeOwnedBy(Builder $query, User $user): Builder
     {

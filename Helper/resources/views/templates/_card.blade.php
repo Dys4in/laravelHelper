@@ -1,6 +1,6 @@
 {{--
   Tarjeta de plantilla: mismo diseño que la de documentos.
-  Variables: $t (plantilla) · $canManage (coordinador/admin: muestra estado y acciones de administración)
+  Variables: $t (plantilla) · $canManage (usuarios con área/admin: muestra estado y acciones de administración)
 --}}
 @php
   $canUse = auth()->user()->can('useTemplate', $t);

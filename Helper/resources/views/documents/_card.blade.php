@@ -11,21 +11,20 @@
       + (auth()->user()->can('delete', $doc) ? 1 : 0);
   $stackFoot = $supervise ? $actionCount !== 3 : ($done && $actionCount !== 3);
   $canEdit = auth()->user()->can('edit', $doc);
-  $canReview = auth()->user()->can('review', $doc);
-  $openLabel = $canEdit ? 'Abrir en el editor' : ($canReview ? 'Revisar documento' : 'Ver documento');
+  $openLabel = $canEdit ? 'Abrir en el editor' : 'Ver documento';
   $search = implode(' ', array_filter([$doc->code, $doc->title, $doc->user?->name, $doc->area?->name, $doc->template_name ?: $doc->template?->name]));
 @endphp
 
 <article class="hp-card" data-doc data-id="{{ $doc->id }}" data-code="{{ $search }}" data-status="{{ $doc->status }}">
   <div class="hp-card-body">
     <div class="hp-card-row">
-      <span class="hp-badge hp-badge--{{ $doc->status }}" data-badge>{{ $doc->status }}</span>
+      <span class="hp-badge hp-badge--{{ $doc->status }}" data-badge>{{ $doc->statusLabel() }}</span>
       <span class="hp-card-icon" aria-hidden="true"><i class="bi bi-file-earmark-word"></i></span>
     </div>
 
     <div class="hp-card-details">
       <div class="flex items-start gap-1.5">
-        <p class="hp-card-title min-w-0 flex-1" title="{{ $doc->title }}">{{ $doc->title }}</p>
+        <p class="hp-card-title min-w-0 flex-1 whitespace-normal break-words" title="{{ $doc->title }}">{{ $doc->title }}</p>
         @can('rename', $doc)
           <button type="button" class="shrink-0 rounded-lg p-1 text-gray-400 transition hover:bg-brand-soft hover:text-brand"
                   data-modal-open="rename-document"
@@ -61,7 +60,7 @@
     </div>
 
     <a class="hp-btn-outline" href="{{ route('documents.edit', $doc) }}">
-      <i class="bi {{ $canEdit || $canReview ? 'bi-pencil-square' : 'bi-eye' }} mr-2" aria-hidden="true"></i>{{ $openLabel }}
+      <i class="bi {{ $canEdit ? 'bi-pencil-square' : 'bi-eye' }} mr-2" aria-hidden="true"></i>{{ $openLabel }}
     </a>
 
     <div class="hp-card-foot{{ $stackFoot ? ' hp-card-foot--column' : '' }}">
@@ -78,15 +77,15 @@
 
       @can('changeStatus', $doc)
         <form method="POST" action="{{ route('documents.status', $doc) }}"
-              data-confirm="{{ $done ? 'El documento volverá a borrador: no se podrá descargar y su autor podrá editarlo de nuevo.' : 'Se podrá descargar y el autor ya no podrá editarlo. Puedes reabrirlo cuando quieras.' }}"
-              data-confirm-title="{{ $done ? 'Volver a borrador' : 'Marcar como completado' }}"
-              data-confirm-text="{{ $done ? 'Volver a borrador' : 'Completar' }}"
+              data-confirm="{{ $done ? 'El documento volverá a En proceso: no se podrá descargar y su autor podrá editarlo de nuevo.' : 'Se podrá descargar y el autor ya no podrá editarlo. Puedes reabrirlo cuando quieras.' }}"
+              data-confirm-title="{{ $done ? 'Volver a En proceso' : 'Marcar como completado' }}"
+              data-confirm-text="{{ $done ? 'Volver a En proceso' : 'Completar' }}"
               data-confirm-variant="{{ $done ? 'warning' : 'primary' }}">
           @csrf
           @method('PATCH')
           <input type="hidden" name="status" value="{{ $next }}">
           <button type="submit" class="{{ $done ? 'hp-btn-outline' : 'hp-btn-sm hp-btn-sm--ok' }}">
-            <i class="bi {{ $done ? 'bi-arrow-counterclockwise' : 'bi-check2-circle' }}" aria-hidden="true"></i> {{ $done ? 'Volver a borrador' : 'Marcar completado' }}
+            <i class="bi {{ $done ? 'bi-arrow-counterclockwise' : 'bi-check2-circle' }}" aria-hidden="true"></i> {{ $done ? 'Volver a En proceso' : 'Marcar completado' }}
           </button>
         </form>
       @endcan

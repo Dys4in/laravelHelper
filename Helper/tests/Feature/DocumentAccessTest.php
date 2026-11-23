@@ -79,17 +79,17 @@ test('the supervision module is closed to plain users and scoped to the coordina
         ->and($response->viewData('documents')->pluck('id'))->not->toContain($foreign->id);
 });
 
-test('users only see active templates assigned to their area', function () {
+test('users see templates from their area and active general ones', function () {
     $user = makeUser(UserRole::User, $this->area);
 
     $mine = Template::create(['name' => 'Mia', 'area_id' => $this->area->id, 'file_path' => 'x', 'original_name' => 'x.docx', 'status' => 'active']);
     Template::create(['name' => 'Ajena', 'area_id' => $this->other->id, 'file_path' => 'x', 'original_name' => 'x.docx', 'status' => 'active']);
-    Template::create(['name' => 'Inactiva', 'area_id' => $this->area->id, 'file_path' => 'x', 'original_name' => 'x.docx', 'status' => 'inactive']);
+    $inactive = Template::create(['name' => 'Inactiva', 'area_id' => $this->area->id, 'file_path' => 'x', 'original_name' => 'x.docx', 'status' => 'inactive']);
 
     $ids = $this->actingAs($user)->get(route('templates.index'))->assertOk()->viewData('templates')->pluck('id')->all();
 
-    expect($ids)->toBe([$mine->id]);
-    $this->actingAs($user)->post(route('templates.store'), ['name' => 'x'])->assertForbidden();
+    expect($ids)->toContain($mine->id, $inactive->id)->not->toContain(Template::where('name', 'Ajena')->first()->id);
+    expect($user->can('create', \App\Models\Template::class))->toBeTrue();
 });
 
 test('the owner can rename a document but another user cannot', function () {

@@ -16,7 +16,7 @@
   <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores">
     @foreach ([
       ['Documentos', $stats['documents'], 'bi-file-earmark-text', 'bg-brand-soft text-brand', route('supervision.index'), 'Ver todos'],
-      ['Borradores', $stats['drafts'], 'bi-pencil-square', 'bg-gray-100 text-gray-600', route('supervision.index', ['status' => 'draft']), 'Pendientes de completar'],
+      ['En proceso', $stats['drafts'], 'bi-pencil-square', 'bg-gray-100 text-gray-600', route('supervision.index', ['status' => 'draft']), 'Pendientes de completar'],
       ['Completados', $stats['completed'], 'bi-check2-circle', 'bg-success-bg text-success-text', route('supervision.index', ['status' => 'completed']), 'Listos para descargar'],
       ['Plantillas activas', $stats['templates'], 'bi-grid', 'bg-brand-soft text-brand', route('templates.index'), 'de '.$stats['templatesTotal'].' en total'],
     ] as [$label, $value, $ico, $tone, $href, $hint])
@@ -107,7 +107,7 @@
                 <span class="block truncate text-xs text-gray-500">{{ $doc->code }} · {{ $doc->user?->name ?? '—' }} · {{ $doc->area?->name ?? 'Sin área' }}</span>
               </span>
               <span class="flex shrink-0 flex-col items-end gap-1">
-                <span class="hp-badge hp-badge--{{ $doc->status }}">{{ $doc->status }}</span>
+                <span class="hp-badge hp-badge--{{ $doc->status }}">{{ $doc->statusLabel() }}</span>
                 <span class="text-[11px] text-gray-400">{{ $doc->created_at->format('d/m/Y') }}</span>
               </span>
             </a>

@@ -199,9 +199,9 @@ class DocumentController extends Controller
 
     /**
      * Abre el documento en OnlyOffice. El modo depende de quién entra:
-     *  - completado        → solo lectura, para cualquier usuario
-     *  - el creador        → edición
-     *  - coordinador / admin → revisión (control de cambios), si no son el creador
+     *  - completado → solo lectura, para cualquier usuario
+     *  - creador o coordinador de su área → edición
+     *  - resto      → solo lectura
      */
     public function edit(Request $request, Document $document, OnlyOfficeService $oo): View|RedirectResponse
     {
@@ -213,11 +213,7 @@ class DocumentController extends Controller
 
         $document->loadMissing('user');
 
-        $mode = match (true) {
-            Gate::allows('edit', $document) => 'edit',
-            Gate::allows('review', $document) => 'review',
-            default => 'view',
-        };
+        $mode = Gate::allows('edit', $document) ? 'edit' : 'view';
 
         try {
             $config = $oo->editorConfig($document, $request->user(), $mode);
@@ -227,11 +223,7 @@ class DocumentController extends Controller
 
         AuditLogger::log(
             'document.opened',
-            match ($mode) {
-                'edit' => 'Abrió',
-                'review' => 'Abrió en modo revisión',
-                default => 'Abrió en modo lectura',
-            }." el documento «{$document->title}»",
+            ($mode === 'edit' ? 'Abrió' : 'Abrió en modo lectura')." el documento «{$document->title}»",
             $document,
         );
 
@@ -271,7 +263,7 @@ class DocumentController extends Controller
 
         return back()->with('status', $document->isCompleted()
             ? "«{$document->title}» se marcó como completado: ya se puede descargar y los usuarios no pueden editarlo."
-            : "«{$document->title}» volvió a borrador: los usuarios pueden editarlo de nuevo y no se puede descargar.");
+            : "«{$document->title}» volvió a En proceso: los usuarios pueden editarlo de nuevo y no se puede descargar.");
     }
 
     /** Descarga: solo documentos completados, sin excepciones. Siempre sale en PDF, nunca en .docx. */

@@ -70,11 +70,14 @@
           <i class="bi bi-shield-check" aria-hidden="true"></i><span>Audit trail</span>
         </a>
 
-        @if ($isAdmin)
+        @if ($isAdmin || $authUser->hasRole('mod'))
           <p class="mt-4 mb-1 px-4 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Administración</p>
           <a class="hp-nav-item {{ request()->routeIs('admin.users.*') ? 'is-active' : '' }}" href="{{ route('admin.users.index') }}">
             <i class="bi bi-people" aria-hidden="true"></i><span>Usuarios</span>
           </a>
+        @endif
+
+        @if ($isAdmin)
           <a class="hp-nav-item {{ request()->routeIs('admin.areas.*') ? 'is-active' : '' }}" href="{{ route('admin.areas.index') }}">
             <i class="bi bi-diagram-3" aria-hidden="true"></i><span>Áreas</span>
           </a>

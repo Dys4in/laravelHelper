@@ -41,6 +41,7 @@ function initDocuments() {
 
   // Status obligatorio: solo 'completed' o 'draft'
   const statusOf = (card) => ((card.dataset.status || '').trim().toLowerCase() === 'completed' ? 'completed' : 'draft');
+  const statusLabels = { draft: 'En proceso', completed: 'Completado' };
 
   // Cada palabra escrita debe aparecer en el código o en el id de la card.
   const matchesSearch = (card, tokens) => {
@@ -55,7 +56,8 @@ function initDocuments() {
     const status = statusOf(card);
     badge.classList.remove('hp-badge--draft', 'hp-badge--completed');
     badge.classList.add(`hp-badge--${status}`);
-    if (badge.textContent !== status) badge.textContent = status;
+    const label = statusLabels[status] ?? status;
+    if (badge.textContent !== label) badge.textContent = label;
   };
 
   // Contadores y Personal Workspace (no dependen de la búsqueda)
