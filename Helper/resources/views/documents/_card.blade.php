@@ -9,7 +9,7 @@
   $actionCount = 1
       + (auth()->user()->can('changeStatus', $doc) ? 1 : 0)
       + (auth()->user()->can('delete', $doc) ? 1 : 0);
-  $stackFoot = $supervise ? $actionCount !== 3 : ($done && $actionCount !== 3);
+  $stackFoot = $actionCount !== 3;
   $canEdit = auth()->user()->can('edit', $doc);
   $openLabel = $canEdit ? 'Abrir en el editor' : 'Ver documento';
   $search = implode(' ', array_filter([$doc->code, $doc->title, $doc->user?->name, $doc->area?->name, $doc->template_name ?: $doc->template?->name]));

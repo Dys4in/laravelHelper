@@ -88,7 +88,6 @@
 
           @if ($manage)
             <div class="hp-card-foot">
-              <a href="{{ route('templates.download', $t) }}" class="hp-btn-outline"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Descargar PDF</a>
               <button type="button" class="hp-btn-outline" data-modal-open="edit-template-{{ $t->id }}"><i class="bi bi-pencil" aria-hidden="true"></i> Editar</button>
 
               <form method="POST" action="{{ route('templates.status', $t) }}"
