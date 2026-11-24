@@ -96,6 +96,7 @@
                             type="button"
                             id="passwordToggle"
                             class="password-toggle"
+                            data-click-guard-ignore
                             aria-label="Mostrar contraseña"
                         >
                             <img

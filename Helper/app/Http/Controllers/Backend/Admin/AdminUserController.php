@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class AdminUserController extends Controller
@@ -95,12 +96,16 @@ class AdminUserController extends Controller
 
         [$primaryId, $areaIds] = $this->resolveAreas($data, null);
 
-        DB::transaction(function () use ($data, $primaryId, $areaIds) {
-            $user = User::create(array_merge(Arr::except($data, ['areas']), ['area_id' => $primaryId]));
+        $temporaryPassword = Str::password(18, symbols: true);
+        DB::transaction(function () use ($data, $primaryId, $areaIds, $temporaryPassword) {
+            $user = User::create(array_merge(Arr::except($data, ['areas', 'password', 'must_change_password']), [
+                'area_id' => $primaryId, 'password' => Hash::make($temporaryPassword), 'must_change_password' => true,
+            ]));
             $user->areas()->sync($areaIds);
         });
 
-        return redirect()->route('admin.users.index')->with('status', 'Usuario creado correctamente.');
+        return redirect()->route('admin.users.index')->with('status', 'Usuario creado correctamente.')
+            ->with('new_user_email', $data['email'])->with('temporary_password', $temporaryPassword);
     }
 
     public function edit(Request $request, User $user): View|RedirectResponse
@@ -147,10 +152,8 @@ class AdminUserController extends Controller
             return back()->withInput()->with('error', 'No puedes cambiar tu propio rol ni desactivar tu propia cuenta.');
         }
 
-        // Contraseña vacía = no cambiarla.
-        if (blank($data['password'] ?? null)) {
-            unset($data['password']);
-        }
+        // Impedir edición de credenciales incluso mediante solicitudes manipuladas.
+        unset($data['password'], $data['must_change_password']);
 
         $before = $user->assignedAreas()->pluck('name')->join(', ');
         [$primaryId, $areaIds] = $this->resolveAreas($data, $user);

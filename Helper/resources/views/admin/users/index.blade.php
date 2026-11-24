@@ -9,6 +9,21 @@
       </button>
   </section>
 
+  @if (session('temporary_password'))
+    <div class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+      <strong>Contraseña temporal de {{ session('new_user_email') }}:</strong>
+      <code class="break-all select-all">{{ session('temporary_password') }}</code>
+      <p class="mt-1">Cópiala ahora y entrégala por un canal seguro. No volverá a mostrarse. El usuario deberá cambiarla al ingresar.</p>
+    </div>
+  @endif
+  @if (session('recovery_link'))
+    <div class="rounded-xl border border-indigo-300 bg-indigo-50 p-4 text-sm text-indigo-900">
+      <strong>Enlace de recuperación generado (2 visitas, 7 días):</strong>
+      <p class="mt-1 break-all select-all">{{ session('recovery_link') }}</p>
+      <p class="mt-1">Cópialo y compártelo de forma privada. Solo el primer envío cambia la contraseña. El enlace anterior del usuario queda invalidado.</p>
+    </div>
+  @endif
+
   {{-- Filtros --}}
   <form method="GET" action="{{ route('admin.users.index') }}" class="hp-filterbar">
     <div class="hp-search" role="search">
@@ -87,6 +102,12 @@
                 @else
                   <button type="button" class="hp-btn-outline px-3 py-1.5 text-xs font-medium" data-modal-open="edit-user-{{ $u->id }}">Editar</button>
 
+                  @if (! $u->is(auth()->user()))
+                    <form method="POST" action="{{ route('admin.users.recovery-link', $u) }}" data-confirm="El enlace anterior de recuperación quedará invalidado." data-confirm-title="Recuperar contraseña">
+                      @csrf
+                      <button type="submit" class="hp-btn-outline px-3 py-1.5 text-xs font-medium">Recuperar contraseña</button>
+                    </form>
+                  @endif
                   @if ($canToggleStatus && ! $u->is(auth()->user()))
                     <form method="POST" action="{{ route('admin.users.status', $u) }}"
                           data-confirm="{{ $u->isActive() ? $u->name.' no podrá iniciar sesión hasta que lo reactives.' : $u->name.' volverá a poder iniciar sesión.' }}"

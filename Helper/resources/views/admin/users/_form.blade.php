@@ -100,18 +100,11 @@
     @if ($e = $err('areas'))<p class="hp-error">{{ $e }}</p>@elseif ($e = $err('areas.0'))<p class="hp-error">{{ $e }}</p>@else<p class="hp-help">Marca una o varias áreas para este coordinador.</p>@endif
   </div>
 
-  <div class="sm:col-span-2 grid gap-4 sm:grid-cols-2">
-    <div>
-      <label for="{{ $p }}password" class="hp-label">{{ $isEdit ? 'Nueva contraseña' : 'Contraseña *' }}</label>
-      <input id="{{ $p }}password" name="password" type="password" autocomplete="new-password" {{ $isEdit ? '' : 'required' }} class="hp-input" {{ $invalid('password') }}>
-      @if ($e = $err('password'))<p class="hp-error">{{ $e }}</p>@elseif ($isEdit)<p class="hp-help">Déjala vacía para conservar la actual.</p>@endif
-    </div>
-
-    <div>
-      <label for="{{ $p }}password_confirmation" class="hp-label">Confirmar contraseña</label>
-      <input id="{{ $p }}password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" class="hp-input">
-    </div>
-  </div>
+  @if (! $isEdit)
+    <p class="sm:col-span-2 hp-help">Se creará una contraseña temporal aleatoria. Se mostrará una única vez después de guardar, y el usuario deberá cambiarla al iniciar sesión.</p>
+  @else
+    <p class="sm:col-span-2 hp-help">La contraseña no se edita aquí. Utiliza el botón «Recuperar contraseña» en la lista de usuarios.</p>
+  @endif
 </div>
 
 <script>

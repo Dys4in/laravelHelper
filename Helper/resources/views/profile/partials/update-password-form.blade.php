@@ -5,7 +5,7 @@
         </h2>
 
         <p class="mt-1 text-sm text-gray-600">
-            Usa una contraseña larga y difícil de adivinar para mantener tu cuenta segura.
+            Mínimo 8 caracteres (10 para roles privilegiados); incluye mayúsculas, minúsculas, números y símbolos. Sin espacios ni 3 caracteres consecutivos de tu nombre, usuario o correo; evita datos personales y familiares.
         </p>
     </header>
 

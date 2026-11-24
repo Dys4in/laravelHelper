@@ -5,7 +5,6 @@ namespace App\Http\Requests\Admin;
 use App\Enums\UserRole;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 /**
  * Sirve para crear y editar. Si la ruta trae {user}, es edición.
@@ -54,7 +53,6 @@ class UserRequest extends FormRequest
             ],
             'areas.*' => ['integer', 'distinct', Rule::exists('areas', 'id')->whereNull('deleted_at')],
             'status' => ['required', Rule::in(['active', 'inactive'])],
-            'password' => [$isUpdate ? 'nullable' : 'required', 'confirmed', Password::defaults()],
         ];
     }
 
@@ -72,8 +70,6 @@ class UserRequest extends FormRequest
             'area_id.exists' => 'El área seleccionada no existe.',
             'areas.required' => 'Asigna al menos un área al coordinador.',
             'areas.*.exists' => 'Una de las áreas seleccionadas no existe.',
-            'password.required' => 'La contraseña es obligatoria.',
-            'password.confirmed' => 'La confirmación de contraseña no coincide.',
         ];
     }
 }

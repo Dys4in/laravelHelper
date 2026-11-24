@@ -5,6 +5,8 @@ use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\FirstPasswordController;
+use App\Http\Controllers\ManagedPasswordLinkController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,7 +18,12 @@ Route::middleware('guest')->group(function () {
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
 });
 
+Route::get('recuperar/{token}', [ManagedPasswordLinkController::class, 'show'])->middleware(['guest', 'no.cache', 'throttle:20,1'])->name('managed-password.show');
+Route::post('recuperar/{token}', [ManagedPasswordLinkController::class, 'update'])->middleware(['guest', 'throttle:10,1'])->name('managed-password.update');
+
 Route::middleware('auth')->group(function () {
+    Route::get('primera-clave', [FirstPasswordController::class, 'edit'])->middleware('no.cache')->name('password.first.edit');
+    Route::post('primera-clave', [FirstPasswordController::class, 'update'])->name('password.first.update');
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 

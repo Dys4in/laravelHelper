@@ -15,24 +15,29 @@ document.addEventListener('DOMContentLoaded', function () {
     const passwordToggle =
         document.getElementById('passwordToggle');
 
+    const passwordIcon =
+        document.getElementById('passwordIcon');
 
-    if (passwordInput && passwordToggle) {
+
+    if (passwordInput && passwordToggle && passwordIcon) {
+
+        const eyeIcon = new Image();
+        eyeIcon.src = '/backend/assets/images/avatar/user-lock.png';
+
+        const eyeOffIcon = new Image();
+        eyeOffIcon.src = '/backend/assets/images/avatar/passwordblock.png';
 
         passwordToggle.addEventListener('click', function () {
 
-            if (passwordInput.type === 'password') {
+            const visible = passwordInput.type === 'password';
 
-                passwordInput.type = 'text';
+            passwordInput.type = visible ? 'text' : 'password';
 
-                passwordToggle.src = '/backend/assets/images/avatar/passwordBlock.png';
+            passwordIcon.src = visible
+                ? '/backend/assets/images/avatar/passwordblock.png'
+                : '/backend/assets/images/avatar/user-lock.png';
 
-            } else {
-
-                passwordInput.type = 'password';
-
-                passwordToggle.src = '/backend/assets/images/avatar/passwordBlock.png';
-
-            }
+            passwordToggle.setAttribute('aria-label', visible ? 'Ocultar contraseña' : 'Mostrar contraseña');
 
         });
 
