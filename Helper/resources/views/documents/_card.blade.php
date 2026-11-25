@@ -6,10 +6,8 @@
   $supervise = $supervise ?? false;
   $done = $doc->isCompleted();
   $next = $done ? 'draft' : 'completed';
-  $actionCount = 1
-      + (auth()->user()->can('changeStatus', $doc) ? 1 : 0)
-      + (auth()->user()->can('delete', $doc) ? 1 : 0);
-  $stackFoot = $actionCount !== 3;
+  $canChangeStatus = auth()->user()->can('changeStatus', $doc);
+  $canDelete = auth()->user()->can('delete', $doc);
   $canEdit = auth()->user()->can('edit', $doc);
   $openLabel = $canEdit ? 'Abrir en el editor' : 'Ver documento';
   $search = implode(' ', array_filter([$doc->code, $doc->title, $doc->user?->name, $doc->area?->name, $doc->template_name ?: $doc->template?->name]));
@@ -63,52 +61,58 @@
       <i class="bi {{ $canEdit ? 'bi-pencil-square' : 'bi-eye' }} mr-2" aria-hidden="true"></i>{{ $openLabel }}
     </a>
 
-    <div class="hp-card-foot{{ $stackFoot ? ' hp-card-foot--column' : '' }}">
-      {{-- PDF solo cuando esté completado; Word/Excel en cualquier estado. --}}
-      @php $isSheet = \App\Support\OnlyOfficeService::isSheet(\App\Support\OnlyOfficeService::extensionOf($doc->file_path)); @endphp
-      @can('download', $doc)
-        <a href="{{ route('documents.download', $doc) }}" class="hp-btn-outline">
-          <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Descargar PDF
-        </a>
-      @else
-        <button type="button" class="hp-btn-outline" disabled title="Disponible cuando el documento esté completado">
-          <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Descargar PDF
-        </button>
-      @endcan
-      @can('downloadOriginal', $doc)
-        <a href="{{ route('documents.download.original', $doc) }}" class="hp-btn-outline">
-          <i class="bi {{ $isSheet ? 'bi-file-earmark-excel' : 'bi-file-earmark-word' }}" aria-hidden="true"></i> Descargar {{ $isSheet ? 'Excel' : 'Word' }}
-        </a>
-      @endcan
-
-      @can('changeStatus', $doc)
-        <form method="POST" action="{{ route('documents.status', $doc) }}"
-              data-confirm="{{ $done ? 'El documento volverá a En proceso: no se podrá descargar el PDF y su autor podrá editarlo de nuevo.' : 'Se podrá descargar el PDF y el autor ya no podrá editarlo. Puedes reabrirlo cuando quieras.' }}"
-              data-confirm-title="{{ $done ? 'Volver a En proceso' : 'Marcar como completado' }}"
-              data-confirm-text="{{ $done ? 'Volver a En proceso' : 'Completar' }}"
-              data-confirm-variant="{{ $done ? 'warning' : 'primary' }}">
-          @csrf
-          @method('PATCH')
-          <input type="hidden" name="status" value="{{ $next }}">
-          <button type="submit" class="{{ $done ? 'hp-btn-outline' : 'hp-btn-sm hp-btn-sm--ok' }}">
-            <i class="bi {{ $done ? 'bi-arrow-counterclockwise' : 'bi-check2-circle' }}" aria-hidden="true"></i> {{ $done ? 'Volver a En proceso' : 'Marcar completado' }}
+    <div class="hp-card-foot">
+      <div class="hp-card-downloads">
+        {{-- PDF solo cuando esté completado; Word/Excel en cualquier estado. --}}
+        @php $isSheet = \App\Support\OnlyOfficeService::isSheet(\App\Support\OnlyOfficeService::extensionOf($doc->file_path)); @endphp
+        @can('download', $doc)
+          <a href="{{ route('documents.download', $doc) }}" class="hp-btn-outline">
+            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Descargar PDF
+          </a>
+        @else
+          <button type="button" class="hp-btn-outline" disabled title="Disponible cuando el documento esté completado">
+            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Descargar PDF
           </button>
-        </form>
-      @endcan
+        @endcan
+        @can('downloadOriginal', $doc)
+          <a href="{{ route('documents.download.original', $doc) }}" class="hp-btn-outline">
+            <i class="bi {{ $isSheet ? 'bi-file-earmark-excel' : 'bi-file-earmark-word' }}" aria-hidden="true"></i> Descargar {{ $isSheet ? 'Excel' : 'Word' }}
+          </a>
+        @endcan
+      </div>
 
-      {{-- Eliminar: documentos propios en cualquier estado (o cualquier documento si es admin). --}}
-      @can('delete', $doc)
-        <form method="POST" action="{{ route('documents.destroy', $doc) }}"
-              data-confirm="Se eliminará «{{ $doc->title }}» ({{ $doc->code }}) y su archivo. Esta acción no se puede deshacer."
-              data-confirm-title="Eliminar documento" data-confirm-text="Eliminar" data-confirm-variant="danger"
-              data-confirm-phrase="eliminar">
-          @csrf
-          @method('DELETE')
-          <button type="submit" class="hp-btn-sm hp-btn-sm--danger">
-            <i class="bi bi-trash3" aria-hidden="true"></i> Eliminar
-          </button>
-        </form>
-      @endcan
+      @if ($canChangeStatus || $canDelete)
+        <div class="hp-card-actions{{ ($canChangeStatus && $canDelete) ? ' hp-card-actions--split' : '' }}">
+          @can('changeStatus', $doc)
+            <form method="POST" action="{{ route('documents.status', $doc) }}"
+                  data-confirm="{{ $done ? 'El documento volverá a En proceso: no se podrá descargar el PDF y su autor podrá editarlo de nuevo.' : 'Se podrá descargar el PDF y el autor ya no podrá editarlo. Puedes reabrirlo cuando quieras.' }}"
+                  data-confirm-title="{{ $done ? 'Volver a En proceso' : 'Marcar como completado' }}"
+                  data-confirm-text="{{ $done ? 'Volver a En proceso' : 'Completar' }}"
+                  data-confirm-variant="{{ $done ? 'warning' : 'primary' }}">
+              @csrf
+              @method('PATCH')
+              <input type="hidden" name="status" value="{{ $next }}">
+              <button type="submit" class="{{ $done ? 'hp-btn-outline' : 'hp-btn-sm hp-btn-sm--ok' }}">
+                <i class="bi {{ $done ? 'bi-arrow-counterclockwise' : 'bi-check2-circle' }}" aria-hidden="true"></i> {{ $done ? 'Volver a En proceso' : 'Marcar completado' }}
+              </button>
+            </form>
+          @endcan
+
+          {{-- Eliminar: documentos propios en cualquier estado (o cualquier documento si es admin). --}}
+          @can('delete', $doc)
+            <form method="POST" action="{{ route('documents.destroy', $doc) }}"
+                  data-confirm="Se eliminará «{{ $doc->title }}» ({{ $doc->code }}) y su archivo. Esta acción no se puede deshacer."
+                  data-confirm-title="Eliminar documento" data-confirm-text="Eliminar" data-confirm-variant="danger"
+                  data-confirm-phrase="eliminar">
+              @csrf
+              @method('DELETE')
+              <button type="submit" class="hp-btn-sm hp-btn-sm--danger">
+                <i class="bi bi-trash3" aria-hidden="true"></i> Eliminar
+              </button>
+            </form>
+          @endcan
+        </div>
+      @endif
     </div>
   </div>
 </article>
