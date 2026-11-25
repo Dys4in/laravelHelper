@@ -94,8 +94,8 @@
       </div>
 
       <div class="hp-modal-foot">
-        <button type="button" class="hp-btn-outline" data-modal-close>Cancelar</button>
-        <button type="submit" class="hp-btn-outline"><i class="bi bi-plus-lg" aria-hidden="true" style="margin-right: 0.2rem;"></i>Crear área</button>
+        <button type="button" class="hp-btn-confirm hp-btn-confirm--outline" data-modal-close>Cancelar</button>
+        <button type="submit" class="hp-btn-confirm hp-btn-confirm--primary"><i class="bi bi-plus-lg" aria-hidden="true"></i>Crear área</button>
       </div>
     </form>
   </x-hp-modal>
@@ -127,8 +127,8 @@
         </div>
 
         <div class="hp-modal-foot">
-          <button type="button" class="hp-btn-outline" data-modal-close>Cancelar</button>
-          <button type="submit" class="hp-btn-outline">Guardar cambios</button>
+          <button type="button" class="hp-btn-confirm hp-btn-confirm--outline" data-modal-close>Cancelar</button>
+          <button type="submit" class="hp-btn-confirm hp-btn-confirm--primary">Guardar cambios</button>
         </div>
       </form>
     </x-hp-modal>

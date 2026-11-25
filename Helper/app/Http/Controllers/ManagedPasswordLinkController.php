@@ -45,8 +45,13 @@ class ManagedPasswordLinkController extends Controller {
             }
             return $record;
         });
-        abort_unless(User::whereKey($record->user_id)->where('status', 'active')->exists(), 404, 'Enlace inválido o caducado.');
-        return view('auth.managed-password', ['token' => $token, 'alreadyUsed' => (bool) $record->used_at]);
+        $user = User::whereKey($record->user_id)->where('status', 'active')->first();
+        abort_unless($user, 404, 'Enlace inválido o caducado.');
+        return view('auth.managed-password', [
+            'token' => $token,
+            'alreadyUsed' => (bool) $record->used_at,
+            'needsSignature' => $user->must_change_password,
+        ]);
     }
 
     public function update(Request $request, string $token): RedirectResponse {
@@ -57,9 +62,22 @@ class ManagedPasswordLinkController extends Controller {
                 if (! $record || $record->used_at || $record->visits_count > 2 || now()->greaterThanOrEqualTo($record->expires_at)) return false;
                 $user = User::whereKey($record->user_id)->lockForUpdate()->first();
                 if (! $user || ! $user->isActive()) return false;
-                $data = $request->validate(['password' => ['required', 'string', 'confirmed', new CorporatePassword($user)]]);
+                $firstLogin = $user->must_change_password;
+                if ($firstLogin) $request->merge(['signature' => trim((string) $request->input('signature'))]);
+                $rules = ['password' => ['required', 'string', 'confirmed', new CorporatePassword($user)]];
+                if ($firstLogin) $rules['signature'] = [
+                    'required', 'string', 'max:50',
+                    function ($attribute, $value, $fail) use ($user) {
+                        if ((string) $user->signature !== (string) $value) $fail('La firma GMP no coincide con este usuario.');
+                    },
+                ];
+                $data = $request->validate($rules, [
+                    'signature.required' => 'La firma GMP es obligatoria.',
+                    'signature.max' => 'La firma GMP no puede superar los 50 caracteres.',
+                ]);
                 if (Hash::check($data['password'], $user->password)) throw ValidationException::withMessages(['password' => 'Elige una contraseña diferente a la anterior.']);
-                $user->forceFill(['password' => Hash::make($data['password']), 'must_change_password' => false, 'remember_token' => Str::random(60)])->save();
+                $attributes = ['password' => Hash::make($data['password']), 'must_change_password' => false, 'remember_token' => Str::random(60)];
+                $user->forceFill($attributes)->save();
                 DB::table('managed_password_links')->where('id', $record->id)->update(['used_at' => now(), 'updated_at' => now()]);
                 DB::table('managed_password_links')->where('user_id', $user->id)->where('id', '<>', $record->id)->delete();
                 // Invalidate sessions stored in DB, if this deployment uses database sessions.

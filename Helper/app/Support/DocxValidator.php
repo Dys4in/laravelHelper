@@ -10,7 +10,13 @@ use ZipArchive;
  */
 final class DocxValidator
 {
-    public static function isValid(?string $path): bool
+    /** Valida según el tipo de archivo: 'docx' (Word) o 'xlsx' (Excel). */
+    public static function isValidFor(?string $path, string $extension): bool
+    {
+        return self::isValid($path, in_array(strtolower($extension), ['xlsx', 'xlsm'], true) ? 'xl/workbook.xml' : 'word/document.xml');
+    }
+
+    public static function isValid(?string $path, string $mainPart = 'word/document.xml'): bool
     {
         if (! $path || ! is_file($path) || filesize($path) < 100) {
             return false;
@@ -38,7 +44,7 @@ final class DocxValidator
         }
 
         $valid = $zip->locateName('[Content_Types].xml') !== false
-            && $zip->locateName('word/document.xml') !== false;
+            && $zip->locateName($mainPart) !== false;
 
         $zip->close();
 

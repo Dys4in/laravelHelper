@@ -115,4 +115,6 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    'password_rotation_months' => (int) env('PASSWORD_ROTATION_MONTHS', 3),
+
 ];

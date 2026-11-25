@@ -5,6 +5,7 @@ use App\Models\Area;
 use App\Models\Document;
 use App\Models\Template;
 use App\Models\User;
+use App\Support\OnlyOfficeService;
 use Illuminate\Support\Facades\Storage;
 
 function makeUser(UserRole $role, ?Area $area): User
@@ -40,12 +41,26 @@ test('draft documents cannot be downloaded, completed ones can', function () {
     $this->actingAs($user)->get(route('documents.download', makeDoc($user, 'completed')))->assertOk();
 });
 
+test('documents can be downloaded as Word in any status', function () {
+    $user = makeUser(UserRole::User, $this->area);
+
+    $draft = $this->actingAs($user)->get(route('documents.download.original', makeDoc($user, 'draft')));
+    $completed = $this->actingAs($user)->get(route('documents.download.original', makeDoc($user, 'completed')));
+
+    foreach ([$draft, $completed] as $response) {
+        $response->assertOk()
+            ->assertHeader('Content-Type', OnlyOfficeService::DOCX_MIME);
+        expect($response->headers->get('Content-Disposition'))->toContain('informe.docx');
+    }
+});
+
 test('a user cannot open or download documents of other users, even in their own area', function () {
     $user = makeUser(UserRole::User, $this->area);
     $peer = makeUser(UserRole::User, $this->area);
     $doc = makeDoc($peer, 'completed');
 
     $this->actingAs($user)->get(route('documents.download', $doc))->assertForbidden();
+    $this->actingAs($user)->get(route('documents.download.original', $doc))->assertForbidden();
     $this->actingAs($user)->get(route('documents.edit', $doc))->assertForbidden();
 });
 
@@ -89,7 +104,7 @@ test('users see templates from their area and active general ones', function () 
     $ids = $this->actingAs($user)->get(route('templates.index'))->assertOk()->viewData('templates')->pluck('id')->all();
 
     expect($ids)->toContain($mine->id, $inactive->id)->not->toContain(Template::where('name', 'Ajena')->first()->id);
-    expect($user->can('create', \App\Models\Template::class))->toBeTrue();
+    expect($user->can('create', Template::class))->toBeTrue();
 });
 
 test('the owner can rename a document but another user cannot', function () {

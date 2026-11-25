@@ -7,13 +7,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class ProfileUpdateRequest extends FormRequest
 {
-    protected function prepareForValidation(): void
-    {
-        $signature = trim((string) $this->input('signature'));
-
-        $this->merge(['signature' => $signature !== '' ? $signature : null]);
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -23,7 +16,6 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'signature' => ['nullable', 'string', 'max:50'],
         ];
     }
 }

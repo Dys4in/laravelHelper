@@ -139,10 +139,14 @@ class DocumentController extends Controller
         $title = Str::limit(trim($templateName.' - '.$data['title']), 150, '');
 
         $areaId = $mustPickArea ? (int) $data['area_id'] : ($areaIds[0] ?? null);
-        $path = 'documents/'.Str::uuid().'.docx';
+        $extension = OnlyOfficeService::extensionOf($template->file_path); // docx (Word) o xlsx (Excel)
+        $path = 'documents/'.Str::uuid().'.'.$extension;
 
         $disk->copy($template->file_path, $path);
-        $this->useArialByDefault($oo, $path);
+
+        if ($extension === 'docx') {
+            $this->useArialByDefault($oo, $path);
+        }
 
         try {
             $document = DB::transaction(function () use ($title, $templateName, $user, $areaId, $template, $path) {
@@ -231,6 +235,7 @@ class DocumentController extends Controller
             'document' => $document,
             'config' => $config,
             'mode' => $mode,
+            'isSheet' => OnlyOfficeService::extensionOf($document->file_path) === 'xlsx',
             'apiUrl' => $oo->apiScriptUrl(),
             'serverUrl' => config('onlyoffice.url'),
         ]);
@@ -266,7 +271,7 @@ class DocumentController extends Controller
             : "«{$document->title}» volvió a En proceso: los usuarios pueden editarlo de nuevo y no se puede descargar.");
     }
 
-    /** Descarga: solo documentos completados, sin excepciones. Siempre sale en PDF, nunca en .docx. */
+    /** Descarga en PDF: solo documentos completados, sin excepciones. */
     public function download(Document $document, OnlyOfficeService $oo): StreamedResponse|RedirectResponse
     {
         Gate::authorize('download', $document);
@@ -293,6 +298,25 @@ class DocumentController extends Controller
                 fclose($stream);
             }
         }, $filename.'.pdf', ['Content-Type' => 'application/pdf']);
+    }
+
+    /** Descarga el archivo editable tal como está guardado: Word (.docx) o Excel (.xlsx), en cualquier estado. */
+    public function downloadOriginal(Document $document, OnlyOfficeService $oo): StreamedResponse
+    {
+        Gate::authorize('downloadOriginal', $document);
+
+        abort_unless($document->file_path && $oo->disk()->exists($document->file_path), 404, 'El archivo del documento no existe en el servidor.');
+
+        $extension = OnlyOfficeService::extensionOf($document->file_path);
+        $label = $extension === 'xlsx' ? 'Excel' : 'Word';
+
+        AuditLogger::log('document.downloaded', "Descargó el documento «{$document->title}» en {$label}", $document);
+
+        return $oo->disk()->download(
+            $document->file_path,
+            (Str::slug($document->title) ?: 'documento').'.'.$extension,
+            ['Content-Type' => OnlyOfficeService::mimeFor($extension)],
+        );
     }
 
     /** Eliminar: el dueño (usuario o coordinador) en cualquier estado; el admin siempre. */

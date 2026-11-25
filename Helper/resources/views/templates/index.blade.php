@@ -60,7 +60,7 @@
             @else
               <span class="hp-badge hp-badge--draft">{{ $t->area?->name ?? 'general' }}</span>
             @endif
-            <i class="bi bi-file-earmark-word text-xl text-brand" aria-hidden="true"></i>
+            <i class="bi {{ \App\Support\OnlyOfficeService::extensionOf($t->file_path) === 'xlsx' ? 'bi-file-earmark-excel' : 'bi-file-earmark-word' }} text-xl text-brand" aria-hidden="true"></i>
           </div>
 
           <div class="hp-card-details">
@@ -89,6 +89,10 @@
           @if ($manage)
             <div class="hp-card-foot">
               <button type="button" class="hp-btn-outline" data-modal-open="edit-template-{{ $t->id }}"><i class="bi bi-pencil" aria-hidden="true"></i> Editar</button>
+
+             @php $tplSheet = \App\Support\OnlyOfficeService::isSheet(\App\Support\OnlyOfficeService::extensionOf($t->file_path)); @endphp
+              <a href="{{ route('templates.download', $t) }}" class="hp-btn-sm"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> PDF</a>
+              <a href="{{ route('templates.download.original', $t) }}" class="hp-btn-sm"><i class="bi {{ $tplSheet ? 'bi-file-earmark-excel' : 'bi-file-earmark-word' }}" aria-hidden="true"></i> {{ $tplSheet ? 'Excel' : 'Word' }}</a>
 
               <form method="POST" action="{{ route('templates.status', $t) }}"
                     data-confirm="{{ $t->isActive() ? 'Los usuarios dejarán de ver «'.$t->name.'» al crear documentos. Los documentos ya creados no se afectan.' : 'Los usuarios podrán volver a elegir «'.$t->name.'».' }}"
@@ -165,24 +169,24 @@
         <p class="text-sm text-gray-600">Se creará en tu área: <span class="font-semibold text-gray-900">{{ $formAreas->first()?->name ?? $me->area?->name }}</span></p>
       @endif
 
-      <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
-        <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>
-        <button type="submit" class="hp-btn-outline"><i class="bi bi-pencil-square" aria-hidden="true"></i><span>Crear y abrir editor</span></button>
+      <div class="hp-dialog-foot">
+        <button type="button" data-modal-close class="hp-btn-confirm hp-btn-confirm--outline">Cancelar</button>
+        <button type="submit" class="hp-btn-confirm hp-btn-confirm--primary"><i class="bi bi-pencil-square" aria-hidden="true"></i><span>Crear y abrir editor</span></button>
       </div>
     </form>
   </x-app-modal>
 
   {{-- ================= Ventana: Subir plantilla ================= --}}
   @if ($canUpload)
-    <x-app-modal id="upload-template" title="Subir plantilla" description="Archivo .docx que tu equipo podrá usar para crear documentos." size="lg">
+    <x-app-modal id="upload-template" title="Subir plantilla" description="Archivo Word (.docx) o Excel (.xlsx) que tu equipo podrá usar para crear documentos." size="lg">
       <form method="POST" action="{{ route('templates.store') }}" enctype="multipart/form-data" class="space-y-5">
         @csrf
         <input type="hidden" name="_modal" value="upload-template">
         @include('templates._form', ['template' => $newTemplate, 'areas' => $formAreas, 'modalId' => 'upload-template'])
 
-        <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
-          <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>
-          <button type="submit" class="hp-btn-outline"><i class="bi bi-upload mr-2" aria-hidden="true"></i><span>Subir plantilla</span></button>
+        <div class="hp-dialog-foot">
+          <button type="button" data-modal-close class="hp-btn-confirm hp-btn-confirm--outline">Cancelar</button>
+          <button type="submit" class="hp-btn-confirm hp-btn-confirm--primary"><i class="bi bi-upload" aria-hidden="true"></i><span>Subir plantilla</span></button>
         </div>
       </form>
     </x-app-modal>
@@ -197,16 +201,16 @@
     @endphp
     @continue(! $manageTemplate)
 
-    <x-app-modal :id="$editModal" title="Editar plantilla" description="Cambia los datos de «{{ $t->name }}» o reemplaza el archivo .docx." size="lg">
+    <x-app-modal :id="$editModal" title="Editar plantilla" description="Cambia los datos de «{{ $t->name }}» o reemplaza el archivo (.docx o .xlsx)." size="lg">
       <form method="POST" action="{{ route('templates.update', $t) }}" enctype="multipart/form-data" class="space-y-5">
         @csrf
         @method('PUT')
         <input type="hidden" name="_modal" value="{{ $editModal }}">
         @include('templates._form', ['template' => $t, 'areas' => $templateAreas, 'modalId' => $editModal])
 
-        <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
-          <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>
-          <button type="submit" class="hp-btn-outline">Guardar cambios</button>
+        <div class="hp-dialog-foot">
+          <button type="button" data-modal-close class="hp-btn-confirm hp-btn-confirm--outline">Cancelar</button>
+          <button type="submit" class="hp-btn-confirm hp-btn-confirm--primary">Guardar cambios</button>
         </div>
       </form>
     </x-app-modal>

@@ -11,9 +11,9 @@
              class="hp-input" @if ($errors->first('title')) aria-invalid="true" @endif>
       @if ($e = $errors->first('title'))<p class="hp-error">{{ $e }}</p>@endif
     </div>
-    <div class="flex justify-end gap-3 border-t border-gray-100 pt-5">
-      <button type="button" class="hp-btn-outline" data-modal-close>Cancelar</button>
-      <button type="submit" class="hp-btn-outline"><i class="bi bi-check2 mr-2" aria-hidden="true"></i>Guardar nombre</button>
+    <div class="hp-dialog-foot">
+      <button type="button" class="hp-btn-confirm hp-btn-confirm--outline" data-modal-close>Cancelar</button>
+      <button type="submit" class="hp-btn-confirm hp-btn-confirm--primary"><i class="bi bi-check2" aria-hidden="true"></i>Guardar nombre</button>
     </div>
   </form>
 </x-app-modal>

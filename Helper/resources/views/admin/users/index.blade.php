@@ -10,11 +10,56 @@
   </section>
 
   @if (session('temporary_password'))
-    <div class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-      <strong>Contraseña temporal de {{ session('new_user_email') }}:</strong>
-      <code class="break-all select-all">{{ session('temporary_password') }}</code>
-      <p class="mt-1">Cópiala ahora y entrégala por un canal seguro. No volverá a mostrarse. El usuario deberá cambiarla al ingresar.</p>
+    <div class="hp-temp-notice hp-temp-notice--value" data-flash-password>
+      <div class="hp-temp-notice__head">
+        <span class="hp-temp-notice__icon"><i class="bi bi-key" aria-hidden="true"></i></span>
+        <div class="min-w-0">
+          <p class="hp-temp-notice__title">Contraseña temporal de {{ session('new_user_email') }}</p>
+          <p class="hp-temp-notice__text">Entrégala por un canal seguro. El usuario deberá cambiarla al ingresar; también podrás verla en la edición del usuario mientras no la haya cambiado.</p>
+        </div>
+      </div>
+      <div class="hp-temp-notice__value">
+        <code class="hp-temp-notice__code" data-flash-password-value>{{ session('temporary_password') }}</code>
+        <button type="button" data-flash-password-copy data-click-guard-ignore class="hp-temp-notice__copy" aria-label="Copiar contraseña temporal">
+          <i class="bi bi-copy" aria-hidden="true"></i><span data-flash-password-label>Copiar</span>
+        </button>
+      </div>
     </div>
+    <script>
+      (function () {
+        var box = document.querySelector('[data-flash-password]');
+        if (!box || box.dataset.bound === '1') return;
+        box.dataset.bound = '1';
+        var button = box.querySelector('[data-flash-password-copy]');
+        var value = box.querySelector('[data-flash-password-value]');
+        var label = box.querySelector('[data-flash-password-label]');
+        var timer;
+        var done = function () {
+          label.textContent = 'Copiada';
+          clearTimeout(timer);
+          timer = setTimeout(function () { label.textContent = 'Copiar'; }, 1800);
+        };
+        var fallback = function () {
+          var area = document.createElement('textarea');
+          area.value = value.textContent.trim();
+          area.setAttribute('readonly', '');
+          area.style.position = 'fixed';
+          area.style.opacity = '0';
+          document.body.appendChild(area);
+          area.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(area);
+          done();
+        };
+        button.addEventListener('click', function () {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(value.textContent.trim()).then(done, fallback);
+          } else {
+            fallback();
+          }
+        });
+      })();
+    </script>
   @endif
   @if (session('recovery_link'))
     <div class="rounded-xl border border-indigo-300 bg-indigo-50 p-4 text-sm text-indigo-900">
@@ -141,9 +186,9 @@
       <input type="hidden" name="_modal" value="create-user">
       @include('admin.users._form', ['user' => $newUser, 'areas' => $formAreas, 'roles' => $formRoles, 'modalId' => 'create-user'])
 
-      <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
-        <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>
-        <button type="submit" class="hp-btn-outline">Crear usuario</button>
+      <div class="hp-dialog-foot">
+        <button type="button" data-modal-close class="hp-btn-confirm hp-btn-confirm--outline">Cancelar</button>
+        <button type="submit" class="hp-btn-confirm hp-btn-confirm--primary">Crear usuario</button>
       </div>
     </form>
   </x-app-modal>
@@ -188,9 +233,9 @@
         <input type="hidden" name="_modal" value="{{ $editModal }}">
         @include('admin.users._form', ['user' => $u, 'areas' => $userAreas, 'roles' => $formRoles, 'modalId' => $editModal])
 
-        <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
-          <button type="button" data-modal-close class="hp-btn-outline">Cancelar</button>
-          <button type="submit" class="hp-btn-outline">Guardar cambios</button>
+        <div class="hp-dialog-foot">
+          <button type="button" data-modal-close class="hp-btn-confirm hp-btn-confirm--outline">Cancelar</button>
+          <button type="submit" class="hp-btn-confirm hp-btn-confirm--primary">Guardar cambios</button>
         </div>
       </form>
     </x-app-modal>

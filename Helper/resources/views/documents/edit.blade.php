@@ -104,7 +104,7 @@
 </head>
 
 <body class="hp-body h-full overflow-hidden">
-  <main id="editorStage" class="editor-stage{{ $mode === 'edit' ? ' side-visible' : '' }}">
+  <main id="editorStage" class="editor-stage{{ $mode === 'edit' && ! ($isSheet ?? false) ? ' side-visible' : '' }}">
     <div class="editor-main">
 
     <header class="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4">
@@ -123,7 +123,14 @@
       @else
         <p class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">Solo lectura · documento completado</p>
       @endif
-      @if ($mode === 'edit')
+      @can('downloadOriginal', $document)
+      <a href="{{ route('documents.download.original', $document) }}"
+         title="Descargar {{ $isSheet ? 'Excel' : 'Word' }}"
+         class="hp-btn-outline flex shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+        <i class="bi {{ $isSheet ? 'bi-file-earmark-excel' : 'bi-file-earmark-word' }}" aria-hidden="true"></i><span class="hidden sm:inline">Descargar {{ $isSheet ? 'Excel' : 'Word' }}</span>
+      </a>
+      @endcan
+      @if ($mode === 'edit' && ! ($isSheet ?? false))
       <button id="editorSideToggle" type="button" aria-controls="editorRightSidebar" aria-expanded="true"
               class="hp-btn-outline flex shrink-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
         <i class="bi bi-layout-sidebar-reverse" aria-hidden="true"></i><span class="hidden sm:inline">Herramientas</span>
@@ -147,7 +154,7 @@
       </div>
       </section>
     </div>
-    @if ($mode === 'edit')
+    @if ($mode === 'edit' && ! ($isSheet ?? false))
     <div id="editorSideBackdrop" class="editor-side-backdrop" aria-hidden="true"></div>
       <aside id="editorRightSidebar" class="editor-side hp-sidebar" aria-label="Herramientas del editor">
         <div class="editor-side-head">
@@ -245,7 +252,7 @@
       box.classList.add('flex');
     };
   </script>
-  @if ($mode === 'edit')
+  @if ($mode === 'edit' && ! ($isSheet ?? false))
   <script>
     window.helperEditorSettings = {
       enabled: @json($mode !== 'view'),

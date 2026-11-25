@@ -5,7 +5,7 @@
     <p class="hp-overview-sub">Consulta los datos de tu cuenta y actualiza tu información personal.</p>
   </header>
 
-  <div class="grid items-stretch gap-6 lg:grid-cols-2">
+  <div class="grid items-start gap-6 lg:grid-cols-2">
     {{-- Perfil --}}
     <section class="flex flex-col rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
       <div class="flex items-start gap-4">
@@ -63,8 +63,8 @@
         </dl>
       </div>
 
-      <p class="mt-auto pt-4 text-xs leading-relaxed text-gray-400">
-        La firma se edita en Información personal. El correo electrónico se gestiona desde la administración del sistema.
+      <p class="pt-6 text-xs leading-relaxed text-gray-400">
+        La firma GMP se muestra en Información personal y no se puede editar. El correo electrónico se gestiona desde la administración del sistema.
       </p>
     </section>
 

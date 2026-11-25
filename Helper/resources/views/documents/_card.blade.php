@@ -64,7 +64,8 @@
     </a>
 
     <div class="hp-card-foot{{ $stackFoot ? ' hp-card-foot--column' : '' }}">
-      {{-- Descarga (siempre PDF): solo documentos completados, sin excepciones. --}}
+      {{-- PDF solo cuando esté completado; Word/Excel en cualquier estado. --}}
+      @php $isSheet = \App\Support\OnlyOfficeService::isSheet(\App\Support\OnlyOfficeService::extensionOf($doc->file_path)); @endphp
       @can('download', $doc)
         <a href="{{ route('documents.download', $doc) }}" class="hp-btn-outline">
           <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Descargar PDF
@@ -74,10 +75,15 @@
           <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Descargar PDF
         </button>
       @endcan
+      @can('downloadOriginal', $doc)
+        <a href="{{ route('documents.download.original', $doc) }}" class="hp-btn-outline">
+          <i class="bi {{ $isSheet ? 'bi-file-earmark-excel' : 'bi-file-earmark-word' }}" aria-hidden="true"></i> Descargar {{ $isSheet ? 'Excel' : 'Word' }}
+        </a>
+      @endcan
 
       @can('changeStatus', $doc)
         <form method="POST" action="{{ route('documents.status', $doc) }}"
-              data-confirm="{{ $done ? 'El documento volverá a En proceso: no se podrá descargar y su autor podrá editarlo de nuevo.' : 'Se podrá descargar y el autor ya no podrá editarlo. Puedes reabrirlo cuando quieras.' }}"
+              data-confirm="{{ $done ? 'El documento volverá a En proceso: no se podrá descargar el PDF y su autor podrá editarlo de nuevo.' : 'Se podrá descargar el PDF y el autor ya no podrá editarlo. Puedes reabrirlo cuando quieras.' }}"
               data-confirm-title="{{ $done ? 'Volver a En proceso' : 'Marcar como completado' }}"
               data-confirm-text="{{ $done ? 'Volver a En proceso' : 'Completar' }}"
               data-confirm-variant="{{ $done ? 'warning' : 'primary' }}">

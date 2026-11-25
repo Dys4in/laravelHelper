@@ -27,8 +27,7 @@ class ProfileController extends Controller
     {
         $data = $request->validated();
 
-        if ((string) $data['name'] === (string) $request->user()->name
-            && (string) ($data['signature'] ?? '') === (string) ($request->user()->signature ?? '')) {
+        if ((string) $data['name'] === (string) $request->user()->name) {
             return Redirect::route('profile.edit')->with('status', 'profile-unchanged');
         }
 

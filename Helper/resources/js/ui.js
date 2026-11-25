@@ -55,4 +55,19 @@ function initSearchFields() {
   });
 }
 
+document.addEventListener('change', (event) => {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement) || input.type !== 'file') return;
+
+  const wrapper = input.closest('.hp-upload');
+  if (!wrapper) return;
+
+  const name = wrapper.querySelector('[data-upload-name]');
+  if (!name) return;
+
+  name.textContent = input.files && input.files.length
+    ? input.files[0].name
+    : (input.dataset.uploadPlaceholder || 'Ningún archivo seleccionado');
+});
+
 initSearchFields();

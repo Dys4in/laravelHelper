@@ -13,11 +13,10 @@
 @php($idleMinutes = \App\Http\Middleware\EnforceIdleTimeout::limitMinutes())
 
 <div id="idle-warning" hidden role="alertdialog" aria-live="assertive" aria-label="Sesión por caducar"
-     style="position:fixed;right:1rem;bottom:1rem;z-index:110;max-width:22rem;border-radius:.75rem;border:1px solid #fcd34d;background:#fffbeb;padding:1rem 1.25rem;box-shadow:0 10px 30px -10px rgba(0,0,0,.35);font-size:.8125rem;color:#78350f">
-  <p style="margin:0;font-weight:600">Tu sesión está por cerrarse</p>
-  <p style="margin:.25rem 0 .75rem">Por inactividad se cerrará en <strong id="idle-count">60</strong> s.</p>
-  <button type="button" id="idle-stay" data-click-guard-ignore
-          style="cursor:pointer;border:0;border-radius:.5rem;background:#6d3ce8;padding:.45rem .9rem;font-size:.8125rem;font-weight:600;color:#fff">
+     class="hp-temp-notice hp-temp-notice--value fixed bottom-4 right-4 z-[110] max-w-sm shadow-2xl">
+  <p class="hp-temp-notice__title">Tu sesión está por cerrarse</p>
+  <p class="hp-temp-notice__text">Por inactividad se cerrará en <strong id="idle-count">60</strong> s.</p>
+  <button type="button" id="idle-stay" data-click-guard-ignore class="hp-btn-confirm hp-btn-confirm--primary mt-3">
     Seguir conectado
   </button>
 </div>

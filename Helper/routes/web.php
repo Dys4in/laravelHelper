@@ -68,6 +68,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::patch('/documents/rename', [DocumentController::class, 'rename'])->name('documents.rename');
     Route::get('/documents/{document}/edit', [DocumentController::class, 'edit'])->name('documents.edit');
     Route::get('/documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
+    Route::get('/documents/{document}/download/original', [DocumentController::class, 'downloadOriginal'])->name('documents.download.original');
     Route::patch('/documents/{document}/status', [DocumentController::class, 'toggleStatus'])->name('documents.status');
     Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 
@@ -76,6 +77,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::resource('templates', TemplateController::class)->except(['show', 'create']);
     Route::patch('templates/{template}/status', [TemplateController::class, 'toggleStatus'])->name('templates.status');
     Route::get('templates/{template}/download', [TemplateController::class, 'download'])->name('templates.download');
+    Route::get('templates/{template}/download/original', [TemplateController::class, 'downloadOriginal'])->name('templates.download.original');
 
     Route::get('/audit', [AuditLogController::class, 'index'])->name('audit.index');
 });
@@ -101,6 +103,7 @@ Route::middleware(['auth', 'active', 'role:admin,jefe_de_area,mod', 'no.cache'])
     ->group(function () {
         Route::resource('users', AdminUserController::class)->only(['index', 'store', 'edit', 'update']);
         Route::patch('users/{user}/status', [AdminUserController::class, 'toggleStatus'])->name('users.status');
+        Route::match(['post', 'put'], 'users/{user}/unlock', [AdminUserController::class, 'unlock'])->name('users.unlock');
         Route::post('users/{user}/recovery-link', [ManagedPasswordLinkController::class, 'generate'])->middleware('throttle:10,1')->name('users.recovery-link');
     });
 

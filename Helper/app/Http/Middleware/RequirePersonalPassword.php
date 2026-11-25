@@ -7,8 +7,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RequirePersonalPassword {
     public function handle(Request $request, Closure $next): Response {
-        if ($request->user()?->must_change_password && ! $request->routeIs('password.first.*', 'logout')) {
-            if ($request->expectsJson()) return response()->json(['message' => 'Debes cambiar tu contraseña temporal.', 'redirect' => route('password.first.edit')], 409);
+        $user = $request->user();
+        if ($user && $user->needsNewPassword() && ! $request->routeIs('password.first.*', 'logout')) {
+            $message = $user->must_change_password
+                ? 'Debes cambiar tu contraseña temporal.'
+                : 'Tu contraseña ha caducado y debes cambiarla.';
+            if ($request->expectsJson()) return response()->json(['message' => $message, 'redirect' => route('password.first.edit')], 409);
             return redirect()->route('password.first.edit');
         }
         return $next($request);

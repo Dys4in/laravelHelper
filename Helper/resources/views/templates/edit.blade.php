@@ -4,9 +4,9 @@
     @method('PUT')
     @include('templates._form', ['areas' => $areas])
 
-    <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
-      <a href="{{ route('templates.index') }}" class="hp-btn-outline">Cancelar</a>
-      <button type="submit" class="hp-btn-outline">Guardar cambios</button>
+    <div class="hp-dialog-foot">
+      <a href="{{ route('templates.index') }}" class="hp-btn-confirm hp-btn-confirm--outline">Cancelar</a>
+      <button type="submit" class="hp-btn-confirm hp-btn-confirm--primary">Guardar cambios</button>
     </div>
   </form>
 </x-panel-layout>

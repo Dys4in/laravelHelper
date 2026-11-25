@@ -15,9 +15,9 @@
              class="mt-1 block w-full rounded-lg border-gray-300 text-sm focus:border-brand focus:ring-brand @error('description') !border-red-400 @enderror">
     </div>
 
-    <div class="flex items-center justify-end gap-3 border-t border-gray-100 pt-5">
-      <a href="{{ route('admin.areas.index') }}" class="hp-btn-outline">Cancelar</a>
-      <button type="submit" class="hp-btn-outline">Guardar cambios</button>
+    <div class="hp-dialog-foot">
+      <a href="{{ route('admin.areas.index') }}" class="hp-btn-confirm hp-btn-confirm--outline">Cancelar</a>
+      <button type="submit" class="hp-btn-confirm hp-btn-confirm--primary">Guardar cambios</button>
     </div>
   </form>
 </x-admin-layout>

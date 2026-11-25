@@ -23,11 +23,15 @@
                 </div>
 
                 <h1 class="login-title">
-                    Establece tu contraseña
+                    {{ ($expired ?? false) ? 'Actualiza tu contraseña' : 'Establece tu contraseña' }}
                 </h1>
 
                 <p class="login-subtitle">
-                    Por seguridad, debes cambiar la contraseña temporal antes de usar HELPER.
+                    @if ($expired ?? false)
+                        Por seguridad, tu contraseña caducó después de {{ config('auth.password_rotation_months', 3) }} meses y debes elegir una nueva antes de continuar.
+                    @else
+                        Por seguridad, escribe la misma firma GMP que registró el administrador y elige tu contraseña antes de usar HELPER.
+                    @endif
                 </p>
 
             </header>
@@ -52,12 +56,45 @@
                     </ul>
                 </div>
 
-                {{-- Contraseña temporal --}}
+                @if (! ($expired ?? false))
+                {{-- Firma GMP --}}
+                <div class="login-field">
+
+                    <x-input-label
+                        for="signature"
+                        :value="__('Firma GMP')"
+                        class="login-label"
+                    />
+
+                    <div class="login-input-wrapper">
+                        <x-text-input
+                            id="signature"
+                            type="text"
+                            name="signature"
+                            value="{{ old('signature') }}"
+                            maxlength="50"
+                            required
+                            autofocus
+                            autocomplete="off"
+                            placeholder="Firma"
+                            :class="$errors->has('signature') ? 'login-input login-input--error' : 'login-input'"
+                        />
+                    </div>
+
+                    @error('signature')
+                        <span class="login-error">{{ $message }}</span>
+                    @enderror
+
+                </div>
+                @endif
+
+                @if ($expired ?? false)
+                {{-- Contraseña actual --}}
                 <div class="login-field">
 
                     <x-input-label
                         for="current_password"
-                        :value="__('Contraseña temporal')"
+                        :value="__('Contraseña actual')"
                         class="login-label"
                     />
 
@@ -94,6 +131,7 @@
                     @enderror
 
                 </div>
+                @endif
 
                 {{-- Nueva contraseña --}}
                 <div class="login-field">
@@ -185,7 +223,7 @@
                     class="login-button"
                     id="firstPasswordButton"
                 >
-                    Guardar contraseña y continuar
+                    {{ ($expired ?? false) ? 'Continuar' : 'Ingresar' }}
                 </button>
 
             </form>

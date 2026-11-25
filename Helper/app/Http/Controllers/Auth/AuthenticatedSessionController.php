@@ -51,7 +51,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         // El registro de "inició sesión" lo hace el listener del evento Login (AppServiceProvider).
-        if ($request->user()->must_change_password) {
+        if ($request->user()->needsNewPassword()) {
             return redirect()->route('password.first.edit');
         }
         return redirect()->intended(route('dashboard', absolute: false));

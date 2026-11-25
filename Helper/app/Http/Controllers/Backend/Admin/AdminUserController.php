@@ -8,12 +8,13 @@ use App\Http\Requests\Admin\UserRequest;
 use App\Models\Area;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Support\LoginThrottle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AdminUserController extends Controller
@@ -101,6 +102,8 @@ class AdminUserController extends Controller
             $user = User::create(array_merge(Arr::except($data, ['areas', 'password', 'must_change_password']), [
                 'area_id' => $primaryId, 'password' => Hash::make($temporaryPassword), 'must_change_password' => true,
             ]));
+            // Se guarda cifrada para mostrarla en «Editar» hasta que la persona la cambie.
+            $user->forceFill(['temporary_password' => $temporaryPassword])->save();
             $user->areas()->sync($areaIds);
         });
 
@@ -153,7 +156,7 @@ class AdminUserController extends Controller
         }
 
         // Impedir edición de credenciales incluso mediante solicitudes manipuladas.
-        unset($data['password'], $data['must_change_password']);
+        unset($data['password'], $data['must_change_password'], $data['temporary_password'], $data['signature']);
 
         $before = $user->assignedAreas()->pluck('name')->join(', ');
         [$primaryId, $areaIds] = $this->resolveAreas($data, $user);
@@ -162,7 +165,6 @@ class AdminUserController extends Controller
         sort($areaIds);
 
         $unchanged = (string) $data['name'] === (string) $user->name
-            && (string) ($data['signature'] ?? '') === (string) ($user->signature ?? '')
             && strtolower((string) $data['email']) === strtolower((string) $user->email)
             && (! array_key_exists('username', $data) || (string) $data['username'] === (string) $user->username)
             && (string) $data['role'] === (string) $user->role?->value
@@ -210,6 +212,21 @@ class AdminUserController extends Controller
         return back()->with('status', $user->isActive()
             ? "{$user->name} fue activado."
             : "{$user->name} fue desactivado y ya no podrá iniciar sesión.");
+    }
+
+    /** Quita el bloqueo de 30 minutos por contraseñas incorrectas (desde «Editar usuario»). */
+    public function unlock(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($this->canEdit($request->user(), $user), 403);
+
+        if (LoginThrottle::lockedFor($user->email) === 0) {
+            return back()->with('status', "{$user->name} no está bloqueado.");
+        }
+
+        LoginThrottle::clear($user->email);
+        AuditLogger::log('user.updated', "Desbloqueó el acceso de {$user->name} (bloqueo por intentos fallidos)", $user);
+
+        return back()->with('status', "{$user->name} fue desbloqueado y ya puede iniciar sesión.");
     }
 
     /** Admin/jefe editan cualquier cuenta excepto admin; el coordinador solo usuarios de sus áreas. */

@@ -10,3 +10,4 @@ import './dashboard';            // ◄◄ buscador, contadores, workspace y men
 import './click-guard';          // evita dobles clics y envíos duplicados
 import './modals';               // ventanas modales (<dialog>): crear usuario, usar/subir plantilla...
 import './ui';                   // filtros que se aplican al cambiar una lista desplegable
+import './no-changes';            // deshabilita Guardar cuando el formulario de edición no tiene cambios

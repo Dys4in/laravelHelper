@@ -59,9 +59,16 @@
   </div>
 
   <div class="sm:col-span-2">
-    <label for="{{ $p }}file" class="hp-label">{{ $isEdit ? 'Reemplazar archivo (.docx)' : 'Archivo .docx *' }}</label>
-    <input id="{{ $p }}file" name="file" type="file" accept=".docx" {{ $isEdit ? '' : 'required' }}
-           class="hp-file" @if ($err('file')) aria-invalid="true" @endif>
+    <label for="{{ $p }}file" class="hp-label">{{ $isEdit ? 'Reemplazar archivo (.docx o .xlsx o .xlsm)' : 'Archivo .docx o .xlsx o .xlsm *' }}</label>
+    <div class="hp-upload">
+      <input id="{{ $p }}file" name="file" type="file" accept=".docx,.xlsx,.xlsm" {{ $isEdit ? '' : 'required' }}
+             class="hp-upload__input" data-upload-placeholder="{{ $isEdit ? 'Conservar archivo actual' : 'Ningún archivo seleccionado' }}"
+             @if ($err('file')) aria-invalid="true" @endif>
+      <label for="{{ $p }}file" class="hp-upload__button">
+        <i class="bi bi-upload" aria-hidden="true"></i><span>Seleccionar archivo</span>
+      </label>
+      <span class="hp-upload__name" data-upload-name>{{ $isEdit ? 'Conservar archivo actual' : 'Ningún archivo seleccionado' }}</span>
+    </div>
     @if ($e = $err('file'))<p class="hp-error">{{ $e }}</p>@endif
     <p class="hp-help">
       Máximo {{ round(config('onlyoffice.max_upload_kb') / 1024) }} MB.

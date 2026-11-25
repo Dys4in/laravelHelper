@@ -15,7 +15,7 @@ use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * Plantillas .docx.
+ * Plantillas Word (.docx) y Excel (.xlsx).
  *  - Usuario:       las ve y las usa ("Usar plantilla") para crear documentos.
  *  - Coordinador:   además sube y administra las de sus áreas (puede tener varias).
  *  - Administrador: controla las de todas las áreas.
@@ -78,7 +78,10 @@ class TemplateController extends Controller
 
         $size = $file->getSize();
         $originalName = $file->getClientOriginalName();
-        $path = $file->storeAs('templates', Str::uuid().'.docx', ['disk' => config('onlyoffice.disk')]);
+        $extension = in_array(strtolower($file->getClientOriginalExtension()), ['xlsx', 'xlsm'], true)
+            ? strtolower($file->getClientOriginalExtension())
+            : 'docx';
+        $path = $file->storeAs('templates', Str::uuid().'.'.$extension, ['disk' => config('onlyoffice.disk')]);
 
         Template::create([
             'name' => $data['name'],
@@ -145,7 +148,10 @@ class TemplateController extends Controller
 
             $attributes['file_size'] = $file->getSize();
             $attributes['original_name'] = Str::limit($file->getClientOriginalName(), 250, '');
-            $attributes['file_path'] = $file->storeAs('templates', Str::uuid().'.docx', ['disk' => config('onlyoffice.disk')]);
+            $extension = in_array(strtolower($file->getClientOriginalExtension()), ['xlsx', 'xlsm'], true)
+                ? strtolower($file->getClientOriginalExtension())
+                : 'docx';
+            $attributes['file_path'] = $file->storeAs('templates', Str::uuid().'.'.$extension, ['disk' => config('onlyoffice.disk')]);
         }
 
         $template->update($attributes);
@@ -180,7 +186,25 @@ class TemplateController extends Controller
         return back()->with('status', "La plantilla «{$template->name}» fue eliminada.");
     }
 
-    /** Descarga siempre en PDF (nunca el .docx). Se convierte una vez y queda guardado hasta que se reemplace el archivo. */
+    /** Descarga el archivo editable de la plantilla: Word (.docx) o Excel (.xlsx). */
+    public function downloadOriginal(Template $template, OnlyOfficeService $oo): StreamedResponse
+    {
+        Gate::authorize('manage', $template);
+
+        abort_unless($template->file_path && $oo->disk()->exists($template->file_path), 404, 'El archivo de la plantilla no existe en el servidor.');
+        
+        $extension = OnlyOfficeService::extensionOf($template->file_path);
+
+        AuditLogger::log('template.downloaded', "Descargó la plantilla «{$template->name}» en ".($extension === 'xlsx' ? 'Excel' : ($extension === 'xlsm' ? 'Excel (macro)' : 'Word')), $template);
+        
+        return $oo->disk()->download(
+            $template->file_path,
+            (Str::slug($template->name) ?: 'plantilla').'.'.$extension,
+            ['Content-Type' => OnlyOfficeService::mimeFor($extension)],
+        );
+    }
+
+    /** Descarga en PDF. Se convierte una vez Se convierte una vez y queda guardado hasta que se reemplace el archivo. */
     public function download(Template $template, OnlyOfficeService $oo): StreamedResponse|RedirectResponse
     {
         Gate::authorize('manage', $template);

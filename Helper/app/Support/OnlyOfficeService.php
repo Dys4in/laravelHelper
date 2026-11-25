@@ -22,6 +22,32 @@ class OnlyOfficeService
 {
     public const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
+    public const XLSM_MIME = 'application/vnd.ms-excel.sheet.macroEnabled.12';
+
+/** 'docx' (Word), 'xlsx' o 'xlsm' (Excel), según la extensión del archivo guardado. */
+    public static function extensionOf(?string $path): string
+    {
+        return match (strtolower(pathinfo((string) $path, PATHINFO_EXTENSION))) {
+            'xlsx' => 'xlsx',
+            'xlsm' => 'xlsm',
+            default => 'docx',
+        };
+    }   
+
+    public static function isSheet(string $extension): bool
+    {
+        return in_array($extension, ['xlsx', 'xlsm'], true);
+    }
+
+    public static function mimeFor(string $extension): string
+    {
+        return match ($extension) {
+            'xlsx' => self::XLSX_MIME,
+            'xlsm' => self::XLSM_MIME,
+            default => self::DOCX_MIME,
+        };
+    }
+
     public function disk(): Filesystem
     {
         return Storage::disk(config('onlyoffice.disk'));
@@ -84,13 +110,14 @@ class OnlyOfficeService
     public function editorConfig(Document $document, User $user, string $mode = 'edit'): array
     {
         $mode = in_array($mode, ['edit', 'view'], true) ? $mode : 'view';
+        $extension = self::extensionOf($document->file_path);
 
         $config = [
-            'documentType' => 'word',
+            'documentType' => self::isSheet($extension) ? 'cell' : 'word',
             'document' => [
-                'fileType' => 'docx',
+                'fileType' => $extension,
                 'key' => $document->doc_key,
-                'title' => $document->title.'.docx',
+                'title' => $document->title.'.'.$extension,
                 'url' => $this->fileUrl($document),
                 // Se muestra en Archivo → Información del documento.
                 'info' => [
@@ -132,7 +159,7 @@ class OnlyOfficeService
 
         // Complemento de herramientas del editor (se incorpora antes de firmar el JWT).
         // Se omite en modo lectura para respetar permisos.
-        if ($mode !== 'view') {
+        if ($mode !== 'view' && $extension === 'docx') {
             $config['editorConfig']['plugins'] = array_merge(
                 $config['editorConfig']['plugins'] ?? [],
                 [
@@ -205,8 +232,9 @@ class OnlyOfficeService
         return $this->convertUrlToPdf(
             // Clave determinista: el Document Server reutiliza su caché entre descargas.
             'pdf'.$document->id.'v'.$document->version,
-            (Str::slug($document->title) ?: 'documento').'.docx',
+            (Str::slug($document->title) ?: 'documento').'.'.self::extensionOf($document->file_path),
             $this->fileUrl($document),
+            self::extensionOf($document->file_path),
         );
     }
 
@@ -224,8 +252,9 @@ class OnlyOfficeService
 
         $tmp = $this->convertUrlToPdf(
             'tpl'.$template->id.'f'.substr(sha1((string) $template->file_path), 0, 12),
-            (Str::slug($template->name) ?: 'plantilla').'.docx',
+            (Str::slug($template->name) ?: 'plantilla').'.'.self::extensionOf($template->file_path),
             $this->templateFileUrl($template),
+            self::extensionOf($template->file_path),
         );
 
         try {
@@ -260,11 +289,11 @@ class OnlyOfficeService
      * @param  string  $key  Clave del trabajo: [0-9a-zA-Z], máx. 128 caracteres.
      * @return string Ruta del PDF temporal (hay que borrarlo después de enviarlo).
      */
-    private function convertUrlToPdf(string $key, string $title, string $sourceUrl): string
+    private function convertUrlToPdf(string $key, string $title, string $sourceUrl, string $fileType = 'docx'): string
     {
         $payload = [
             'async' => false,
-            'filetype' => 'docx',
+            'filetype' => $fileType,
             'key' => $key,
             'outputtype' => 'pdf',
             'title' => $title,
@@ -389,8 +418,10 @@ class OnlyOfficeService
                 throw new RuntimeException("No se pudo descargar el documento guardado (HTTP {$response->status()}).");
             }
 
-            if (! DocxValidator::isValid($tmp)) {
-                throw new RuntimeException('El archivo recibido de OnlyOffice no es un .docx válido.');
+            $extension = self::extensionOf($document->file_path);
+
+            if (! DocxValidator::isValidFor($tmp, $extension)) {
+                throw new RuntimeException("El archivo recibido de OnlyOffice no es un .{$extension} válido.");
             }
 
             $stream = fopen($tmp, 'rb');

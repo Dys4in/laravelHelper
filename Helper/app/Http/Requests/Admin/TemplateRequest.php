@@ -42,11 +42,11 @@ class TemplateRequest extends FormRequest
             'file' => [
                 $isUpdate ? 'nullable' : 'required',
                 'file',
-                'extensions:docx',
+                'extensions:docx,xlsx,xlsm',
                 'max:'.config('onlyoffice.max_upload_kb'),
                 function (string $attribute, mixed $value, \Closure $fail) {
-                    if ($value instanceof UploadedFile && ! DocxValidator::isValid($value->getRealPath())) {
-                        $fail('El archivo no es un documento .docx válido.');
+                    if ($value instanceof UploadedFile && ! DocxValidator::isValidFor($value->getRealPath(), $value->getClientOriginalExtension())) {
+                        $fail('El archivo no es un documento Word (.docx) ni una hoja de Excel (.xlsx) válidos.');
                     }
                 },
             ],
@@ -62,8 +62,8 @@ class TemplateRequest extends FormRequest
             'area_id.required' => 'Selecciona el área a la que se asigna la plantilla.',
             'area_id.exists' => 'El área seleccionada no existe.',
             'area_id.in' => 'Elige una de tus áreas.',
-            'file.required' => 'Selecciona el archivo .docx de la plantilla.',
-            'file.extensions' => 'Solo se permiten archivos .docx.',
+            'file.required' => 'Selecciona el archivo .docx o .xlsx de la plantilla.',
+            'file.extensions' => 'Solo se permiten archivos .docx (Word), .xlsx o .xlsm (Excel).',
             'file.max' => "El archivo supera el máximo permitido ({$limit}).",
             'file.file' => 'El archivo no se pudo subir. Puede superar el límite del servidor (upload_max_filesize en php.ini).',
             'file.uploaded' => 'El archivo no se pudo subir. Puede superar el límite del servidor (upload_max_filesize en php.ini).',

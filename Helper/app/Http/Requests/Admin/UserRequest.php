@@ -19,13 +19,15 @@ class UserRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $signature = trim((string) $this->input('signature'));
-
         $this->merge([
             'name' => trim((string) $this->input('name')),
-            'signature' => $signature !== '' ? $signature : null,
             'email' => strtolower(trim((string) $this->input('email'))),
         ]);
+
+        if ($this->route('user') === null) {
+            $signature = trim((string) $this->input('signature'));
+            $this->merge(['signature' => $signature !== '' ? $signature : null]);
+        }
     }
 
     public function rules(): array
@@ -35,7 +37,7 @@ class UserRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255', Rule::unique('users', 'name')->ignore($user?->id)],
-            'signature' => ['nullable', 'string', 'max:50'],
+            'signature' => $isUpdate ? ['prohibited'] : ['required', 'string', 'max:50'],
             'username' => ['nullable', 'string', 'max:50', Rule::unique('users', 'username')->ignore($user?->id)],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user?->id)],
             'role' => ['required', Rule::enum(UserRole::class)],
@@ -61,6 +63,9 @@ class UserRequest extends FormRequest
         return [
             'name.required' => 'El nombre es obligatorio.',
             'name.unique' => 'Ya existe un usuario con ese nombre.',
+            'signature.required' => 'La firma GMP es obligatoria.',
+            'signature.max' => 'La firma GMP no puede superar los 50 caracteres.',
+            'signature.prohibited' => 'La firma GMP no se puede editar.',
             'email.required' => 'El correo es obligatorio.',
             'email.email' => 'Escribe un correo válido.',
             'email.unique' => 'Ya existe un usuario con ese correo.',

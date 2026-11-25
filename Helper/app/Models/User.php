@@ -32,6 +32,7 @@ class User extends Authenticatable
         'email',
         'password',
         'must_change_password',
+        'password_changed_at',
         'role',
         'status',
         'area_id',
@@ -39,6 +40,7 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
+        'temporary_password',
         'remember_token',
     ];
 
@@ -48,8 +50,39 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'must_change_password' => 'boolean',
+            'password_changed_at' => 'datetime',
+            'temporary_password' => 'encrypted', // cifrada en la base de datos
             'role' => UserRole::class,
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // La contraseña temporal solo vive mientras la persona no haya puesto la suya.
+        static::saving(function (User $user) {
+            if ($user->isDirty('password') && ($user->exists || ! $user->password_changed_at)) {
+                $user->password_changed_at = now();
+            }
+            if (! $user->must_change_password && $user->temporary_password !== null) {
+                $user->temporary_password = null;
+            }
+        });
+    }
+
+    public function passwordExpired(): bool
+    {
+        if (! $this->password_changed_at) {
+            return false;
+        }
+
+        return $this->password_changed_at->lessThanOrEqualTo(
+            now()->subMonths(config('auth.password_rotation_months', 3))
+        );
+    }
+
+    public function needsNewPassword(): bool
+    {
+        return $this->must_change_password || $this->passwordExpired();
     }
 
     public function area(): BelongsTo

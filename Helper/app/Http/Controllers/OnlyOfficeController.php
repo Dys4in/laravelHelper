@@ -24,8 +24,10 @@ class OnlyOfficeController extends Controller
         $disk = $oo->disk();
         abort_unless($document->file_path && $disk->exists($document->file_path), 404);
 
-        return $disk->response($document->file_path, 'document.docx', [
-            'Content-Type' => OnlyOfficeService::DOCX_MIME,
+        $extension = OnlyOfficeService::extensionOf($document->file_path);
+
+        return $disk->response($document->file_path, 'document.'.$extension, [
+            'Content-Type' => OnlyOfficeService::mimeFor($extension),
             'Cache-Control' => 'no-store',
         ]);
     }
@@ -38,8 +40,10 @@ class OnlyOfficeController extends Controller
         $disk = $oo->disk();
         abort_unless($template->file_path && $disk->exists($template->file_path), 404);
 
-        return $disk->response($template->file_path, 'plantilla.docx', [
-            'Content-Type' => OnlyOfficeService::DOCX_MIME,
+        $extension = OnlyOfficeService::extensionOf($template->file_path);
+
+        return $disk->response($template->file_path, 'plantilla.'.$extension, [
+            'Content-Type' => OnlyOfficeService::mimeFor($extension),
             'Cache-Control' => 'no-store',
         ]);
     }

@@ -27,7 +27,11 @@
                 </h1>
 
                 <p class="login-subtitle">
-                    Este enlace es válido durante 7 días y se puede abrir dos veces.
+                    @if ($needsSignature ?? false)
+                        Escribe la misma firma GMP que registró el administrador y elige una nueva contraseña. El enlace es válido durante 7 días y se puede abrir dos veces.
+                    @else
+                        Este enlace es válido durante 7 días y se puede abrir dos veces.
+                    @endif
                 </p>
 
             </header>
@@ -46,6 +50,38 @@
                 >
 
                     @csrf
+
+                    @if ($needsSignature ?? false)
+                    {{-- Firma GMP --}}
+                    <div class="login-field">
+
+                        <x-input-label
+                            for="signature"
+                            :value="__('Firma GMP')"
+                            class="login-label"
+                        />
+
+                        <div class="login-input-wrapper">
+                            <x-text-input
+                                id="signature"
+                                type="text"
+                                name="signature"
+                                value="{{ old('signature') }}"
+                                maxlength="50"
+                                required
+                                autofocus
+                                autocomplete="off"
+                                placeholder="J.C.Pérez"
+                                :class="$errors->has('signature') ? 'login-input login-input--error' : 'login-input'"
+                            />
+                        </div>
+
+                        @error('signature')
+                            <span class="login-error">{{ $message }}</span>
+                        @enderror
+
+                    </div>
+                    @endif
 
                     {{-- Requisitos --}}
                     <div class="password-requirements">
@@ -74,7 +110,7 @@
                                 type="password"
                                 name="password"
                                 required
-                                autofocus
+                                {{ ($needsSignature ?? false) ? '' : 'autofocus' }}
                                 autocomplete="new-password"
                                 placeholder="••••••"
                                 :class="$errors->has('password') ? 'login-input login-input--error' : 'login-input'"
@@ -149,7 +185,7 @@
                         class="login-button"
                         id="managedPasswordButton"
                     >
-                        Establecer nueva contraseña
+                        {{ ($needsSignature ?? false) ? 'Guardar firma y contraseña' : 'Establecer nueva contraseña' }}
                     </button>
 
                 </form>

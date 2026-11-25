@@ -17,19 +17,62 @@
   $formRoles = array_values(array_filter($roles, fn ($role) => $role->value !== 'admin' || $role->value === $currentRole));
 @endphp
 
+@php
+  $lockedSeconds = $isEdit ? \App\Support\LoginThrottle::lockedFor($user->email) : 0;
+  $tempPassword = $isEdit && $user->must_change_password ? $user->temporary_password : null;
+@endphp
+
 <div class="hp-modal-grid" data-user-form="{{ $p }}form">
+  @if ($lockedSeconds > 0)
+    <div class="sm:col-span-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+      <p class="font-semibold">Acceso bloqueado por intentos fallidos</p>
+      <p class="mt-0.5">Faltan {{ \App\Support\LoginThrottle::humanize($lockedSeconds) }} para que pueda volver a intentarlo.</p>
+      <button type="submit" formaction="{{ route('admin.users.unlock', $user) }}" formmethod="post" formnovalidate
+              class="hp-btn-outline mt-2 px-3 py-1.5 text-xs font-medium">Desbloquear ahora</button>
+    </div>
+  @endif
+
+  @if ($tempPassword)
+    <div class="sm:col-span-2 hp-temp-notice hp-temp-notice--value">
+      <div class="hp-temp-notice__head">
+        <span class="hp-temp-notice__icon"><i class="bi bi-key" aria-hidden="true"></i></span>
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="hp-temp-notice__title">Contraseña temporal</p>
+            <span class="hp-temp-notice__badge">Pendiente de cambio</span>
+          </div>
+          <p class="hp-temp-notice__text">Entrégala a {{ $user->name }} por un canal seguro. Dejará de mostrarse cuando la persona ingrese y la cambie.</p>
+        </div>
+      </div>
+      <div class="hp-temp-notice__value">
+        <code class="hp-temp-notice__code" data-temp-value>{{ $tempPassword }}</code>
+        <button type="button" data-temp-copy data-click-guard-ignore class="hp-temp-notice__copy" aria-label="Copiar contraseña temporal">
+          <i class="bi bi-copy" aria-hidden="true"></i><span data-temp-copy-label>Copiar</span>
+        </button>
+      </div>
+    </div>
+  @endif
+
   <div>
     <label for="{{ $p }}name" class="hp-label">Nombre completo *</label>
     <input id="{{ $p }}name" name="name" type="text" value="{{ $val('name', $user->name) }}" required class="hp-input" {{ $invalid('name') }}>
     @if ($e = $err('name'))<p class="hp-error">{{ $e }}</p>@endif
   </div>
 
+  @if ($isEdit)
   <div>
-    <label for="{{ $p }}signature" class="hp-label">Firma (opcional)</label>
-    <input id="{{ $p }}signature" name="signature" type="text" value="{{ $val('signature', $user->signature) }}" maxlength="50" class="hp-input" {{ $invalid('signature') }}>
-    @if ($e = $err('signature'))<p class="hp-error">{{ $e }}</p>@endif
-    <p class="hp-help">Si se deja vacía, se genera a partir del nombre.</p>
+    <span class="hp-label">Firma GMP</span>
+    <p class="hp-input">{{ $user->signature ?: '—' }}</p>
+    <p class="hp-help">La firma GMP no se puede editar.</p>
   </div>
+  @else
+  <div>
+    <label for="{{ $p }}signature" class="hp-label">Firma GMP *</label>
+    <input id="{{ $p }}signature" name="signature" type="text" value="{{ $val('signature', $user->signature) }}" maxlength="50" class="hp-input" required {{ $invalid('signature') }}>
+    @if ($e = $err('signature'))<p class="hp-error">{{ $e }}</p>@endif
+    <p class="hp-help">Firma que el usuario deberá repetir al entrar por primera vez.</p>
+  </div>
+  @endif
 
   <div>
     <label for="{{ $p }}email" class="hp-label">Correo electrónico *</label>
@@ -39,7 +82,7 @@
 
   <div>
     <label for="{{ $p }}role" class="hp-label">Rol *</label>
-    <select id="{{ $p }}role" name="role" required class="hp-select" data-role-select {{ $invalid('role') }}>
+    <select id="{{ $p }}role" name="role" required class="hp-select" data-role-select {{ $invalid('role') }}> 
       @foreach ($formRoles as $role)
         <option value="{{ $role->value }}" @selected($currentRole === $role->value)>{{ $role->label() }}</option>
       @endforeach
@@ -101,7 +144,15 @@
   </div>
 
   @if (! $isEdit)
-    <p class="sm:col-span-2 hp-help">Se creará una contraseña temporal aleatoria. Se mostrará una única vez después de guardar, y el usuario deberá cambiarla al iniciar sesión.</p>
+    <div class="sm:col-span-2 hp-temp-notice">
+      <div class="hp-temp-notice__head">
+        <span class="hp-temp-notice__icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+        <div>
+          <p class="hp-temp-notice__title">La contraseña se genera al guardar</p>
+          <p class="hp-temp-notice__text">El sistema creará una contraseña temporal aleatoria. Al iniciar sesión, el usuario deberá escribir la misma firma GMP registrada y elegir su contraseña. Podrás consultarla y copiarla desde la edición del usuario hasta que la cambie.</p>
+        </div>
+      </div>
+    </div>
   @else
     <p class="sm:col-span-2 hp-help">La contraseña no se edita aquí. Utiliza el botón «Recuperar contraseña» en la lista de usuarios.</p>
   @endif
@@ -112,6 +163,39 @@
   var form = document.querySelector('[data-user-form="{{ $p }}form"]');
   if (!form || form.dataset.bound === '1') return;
   form.dataset.bound = '1';
+
+  var copyButton = form.querySelector('[data-temp-copy]');
+  if (copyButton) {
+    var copyValue = form.querySelector('[data-temp-value]');
+    var copyLabel = copyButton.querySelector('[data-temp-copy-label]');
+    var copyTimer;
+    var markCopied = function () {
+      copyLabel.textContent = 'Copiada';
+      clearTimeout(copyTimer);
+      copyTimer = setTimeout(function () { copyLabel.textContent = 'Copiar'; }, 1800);
+    };
+    var copyFallback = function (text) {
+      var area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(area);
+      markCopied();
+    };
+    copyButton.addEventListener('click', function () {
+      var text = copyValue ? copyValue.textContent.trim() : '';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(markCopied, function () { copyFallback(text); });
+      } else {
+        copyFallback(text);
+      }
+    });
+  }
+
   var role = form.querySelector('[data-role-select]');
   var singleWrap = form.querySelector('[data-area-single]');
   var multiWrap = form.querySelector('[data-area-multi]');

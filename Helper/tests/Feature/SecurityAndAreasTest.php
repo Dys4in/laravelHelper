@@ -6,6 +6,7 @@ use App\Models\Document;
 use App\Models\Template;
 use App\Models\User;
 use App\Support\LoginThrottle;
+use App\Support\OnlyOfficeService;
 use Illuminate\Support\Facades\Hash;
 
 beforeEach(function () {
@@ -80,6 +81,7 @@ it('rejects duplicated user names on create and update', function () {
 
     $payload = [
         'name' => $existing->name,
+        'signature' => 'J.C. Pérez',
         'email' => 'nuevo@example.com',
         'role' => UserRole::User->value,
         'area_id' => $this->a->id,
@@ -96,6 +98,31 @@ it('rejects duplicated user names on create and update', function () {
 
     $this->actingAs($admin)->patch(route('admin.users.update', $target), $payload)
         ->assertSessionHasErrors('name');
+});
+
+it('requires the GMP signature when creating a user', function () {
+    $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => 'active']);
+    $payload = [
+        'name' => 'Usuario Con Firma',
+        'email' => 'con.firma@example.com',
+        'role' => UserRole::User->value,
+        'area_id' => $this->a->id,
+        'status' => 'active',
+    ];
+
+    $this->actingAs($admin)->post(route('admin.users.store'), $payload)
+        ->assertSessionHasErrors('signature');
+
+    $payload['signature'] = 'J.C. Pérez';
+
+    $this->actingAs($admin)->post(route('admin.users.store'), $payload)
+        ->assertRedirect(route('admin.users.index'));
+
+    $this->assertDatabaseHas('users', [
+        'email' => 'con.firma@example.com',
+        'signature' => 'J.C. Pérez',
+        'must_change_password' => true,
+    ]);
 });
 
 it('does not save a user edit when nothing changed', function () {
@@ -193,6 +220,7 @@ it('creates a jefe de area without an assigned area', function () {
 
     $this->actingAs($admin)->post(route('admin.users.store'), [
         'name' => 'Jefe Prueba',
+        'signature' => 'Jefe P.',
         'email' => 'jefe@example.com',
         'role' => UserRole::JefeArea->value,
         'status' => 'active',
@@ -279,46 +307,36 @@ it('lets every user upload, edit and delete templates only for their own areas',
     ])->assertSessionHasErrors('area_id');
 });
 
-it('lets users edit their signature', function () {
+it('does not let users edit their signature', function () {
     $user = User::factory()->create([
         'role' => UserRole::User, 'status' => 'active', 'area_id' => $this->a->id,
-        'name' => 'Juan Carlos Pérez',
-    ]);
-
-    $this->actingAs($user)->get(route('profile.edit'))->assertOk()->assertSee('name="signature"', false);
-
-    $this->patch(route('profile.update'), [
-        'name' => $user->name,
         'signature' => 'J.C. Pérez',
-    ])->assertRedirect(route('profile.edit'))->assertSessionHas('status', 'profile-updated');
+    ]);
 
-    expect($user->fresh()->signature)->toBe('J.C. Pérez')
-        ->and($user->fresh()->short_name)->toBe('J.C. Pérez');
+    $this->actingAs($user)->get(route('profile.edit'))
+        ->assertOk()
+        ->assertSee('J.C. Pérez')
+        ->assertDontSee('name="signature"', false);
 
     $this->patch(route('profile.update'), [
         'name' => $user->name,
-        'signature' => str_repeat('x', 51),
-    ])->assertSessionHasErrors('signature');
-});
-
-it('generates the signature from the name when it is left empty', function () {
-    $user = User::factory()->create([
-        'role' => UserRole::User, 'status' => 'active', 'area_id' => $this->a->id,
-        'name' => 'Juan Carlos Pérez',
-    ]);
-
-    $this->actingAs($user)->patch(route('profile.update'), [
-        'name' => $user->name,
-        'signature' => '   ',
+        'signature' => 'Otra firma',
     ])->assertRedirect(route('profile.edit'));
 
-    expect($user->fresh()->signature)->toBeNull()
-        ->and($user->fresh()->short_name)->toBe('J.C.Pérez');
+    expect($user->fresh()->signature)->toBe('J.C. Pérez');
 });
 
-it('lets an administrator edit a user signature', function () {
+it('does not let an administrator edit a user signature', function () {
     $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => 'active']);
-    $user = User::factory()->create(['role' => UserRole::User, 'status' => 'active', 'area_id' => $this->a->id]);
+    $user = User::factory()->create([
+        'role' => UserRole::User, 'status' => 'active', 'area_id' => $this->a->id,
+        'signature' => 'J.C. Pérez',
+    ]);
+
+    $this->actingAs($admin)->get(route('admin.users.edit', $user))
+        ->assertOk()
+        ->assertSee('J.C. Pérez')
+        ->assertDontSee('name="signature"', false);
 
     $this->actingAs($admin)->patch(route('admin.users.update', $user), [
         'name' => $user->name,
@@ -329,9 +347,9 @@ it('lets an administrator edit a user signature', function () {
         'status' => 'active',
         'password' => '',
         'password_confirmation' => '',
-    ])->assertRedirect();
+    ])->assertSessionHasErrors('signature');
 
-    expect($user->fresh()->short_name)->toBe('Firma HC');
+    expect($user->fresh()->signature)->toBe('J.C. Pérez');
 });
 
 it('lets a coordinator view and create users only in their areas', function () {
@@ -350,6 +368,7 @@ it('lets a coordinator view and create users only in their areas', function () {
 
     $this->post(route('admin.users.store'), [
         'name' => 'Nuevo del area',
+        'signature' => 'Nuevo A.',
         'email' => 'nuevo.del.area@example.com',
         'role' => UserRole::User->value,
         'area_id' => $this->a->id,
@@ -370,6 +389,7 @@ it('does not let a coordinator create privileged users or users outside their ar
 
     $this->actingAs($coordinator)->post(route('admin.users.store'), [
         'name' => 'Nuevo admin',
+        'signature' => 'Nuevo A.',
         'email' => 'nuevo.admin@example.com',
         'role' => UserRole::Admin->value,
         'status' => 'active',
@@ -379,6 +399,7 @@ it('does not let a coordinator create privileged users or users outside their ar
 
     $this->post(route('admin.users.store'), [
         'name' => 'Fuera de area',
+        'signature' => 'Fuera A.',
         'email' => 'fuera.de.area@example.com',
         'role' => UserRole::User->value,
         'area_id' => $this->c->id,
@@ -412,7 +433,7 @@ it('lets coordinators edit documents from their areas with review disabled', fun
         ->and($owner->can('edit', $document))->toBeTrue()
         ->and($peer->can('edit', $document))->toBeFalse();
 
-    $config = app(\App\Support\OnlyOfficeService::class)->editorConfig($document, $coordinator, 'edit');
+    $config = app(OnlyOfficeService::class)->editorConfig($document, $coordinator, 'edit');
 
     expect($config['document']['permissions']['review'])->toBeFalse()
         ->and($config['document']['permissions']['edit'])->toBeTrue();
@@ -423,6 +444,7 @@ it('lets a coordinator edit users in their areas without changing roles or areas
     $target = User::factory()->create([
         'name' => 'Usuario editable', 'email' => 'editable@example.com',
         'role' => UserRole::User, 'status' => 'active', 'area_id' => $this->a->id,
+        'signature' => 'Firma original',
     ]);
     $foreign = User::factory()->create([
         'name' => 'Usuario ajeno', 'email' => 'ajeno@example.com',
@@ -440,8 +462,7 @@ it('lets a coordinator edit users in their areas without changing roles or areas
     $this->get(route('admin.users.edit', $peer))->assertForbidden();
 
     $payload = [
-        'name' => $target->name,
-        'signature' => 'Firma editable',
+        'name' => 'Usuario editado',
         'email' => $target->email,
         'role' => UserRole::User->value,
         'area_id' => $this->a->id,
@@ -451,7 +472,8 @@ it('lets a coordinator edit users in their areas without changing roles or areas
     ];
 
     $this->patch(route('admin.users.update', $target), $payload)->assertRedirect(route('admin.users.index'));
-    expect($target->fresh()->short_name)->toBe('Firma editable');
+    expect($target->fresh()->name)->toBe('Usuario editado')
+        ->and($target->fresh()->signature)->toBe('Firma original');
 
     $this->patch(route('admin.users.update', $target), array_merge($payload, [
         'role' => UserRole::Mod->value,

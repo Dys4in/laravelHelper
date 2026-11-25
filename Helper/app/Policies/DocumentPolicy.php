@@ -11,7 +11,8 @@ use App\Models\User;
  *  - Coordinador:   ve y edita los de sus áreas (puede tener varias); puede completarlos / reabrirlos.
  *  - Administrador: ve todos; puede completarlos / reabrirlos.
  *  - Completado:    se abre solo en modo lectura, sin importar el usuario.
- *  - Descargar:     solo documentos COMPLETADOS, sin excepciones.
+ *  - Descargar PDF: solo documentos COMPLETADOS, sin excepciones.
+ *  - Descargar Word/Excel: en cualquier estado, para quien puede ver el documento.
  *  - Renombrar:     el dueño, el coordinador de su área o el admin, en cualquier estado.
  *  - Eliminar:      el dueño (usuario o coordinador) en cualquier estado; el admin siempre.
  */
@@ -59,6 +60,11 @@ class DocumentPolicy
     public function download(User $user, Document $document): bool
     {
         return $this->view($user, $document) && $document->isCompleted();
+    }
+
+    public function downloadOriginal(User $user, Document $document): bool
+    {
+        return $this->view($user, $document);
     }
 
     /** Renombrar no toca el contenido: puede hacerlo quien puede ver el documento, incluso completado. */
